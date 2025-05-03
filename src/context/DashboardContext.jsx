@@ -47,12 +47,13 @@ export const DashboardProvider = ({ children }) => {
   });
   
   const [chartData, setChartData] = useState({
-    serviciosPorMes: [],
+    serviciosPorPeriodo: [],
     serviciosPorOperador: [],
     serviciosPorUnidad: [],
     serviciosPorEstatus: [],
     serviciosPorCliente: [],
-    serviciosPorHora: []
+    serviciosPorHora: [],
+    tituloGraficaTiempo: "Servicios por Mes"
   });
   
   // Actualizar opciones de filtro cuando cambian los datos
@@ -67,11 +68,12 @@ export const DashboardProvider = ({ children }) => {
     }
   }, [data]);
   
-  // Actualizar datos de gráficos cuando cambian los datos filtrados
+  // Actualizar datos de gráficos cuando cambian los datos filtrados o los filtros
   useEffect(() => {
     if (filteredData && filteredData.length > 0) {
       try {
-        const newChartData = generateChartData(filteredData);
+        // Pasar los filtros actuales para determinar si agrupar por día o por mes
+        const newChartData = generateChartData(filteredData, filters);
         setChartData(newChartData);
       } catch (error) {
         console.error("Error al generar datos para gráficas:", error);
@@ -79,15 +81,16 @@ export const DashboardProvider = ({ children }) => {
     } else {
       // Resetear gráficos cuando no hay datos
       setChartData({
-        serviciosPorMes: [],
+        serviciosPorPeriodo: [],
         serviciosPorOperador: [],
         serviciosPorUnidad: [],
         serviciosPorEstatus: [],
         serviciosPorCliente: [],
-        serviciosPorHora: []
+        serviciosPorHora: [],
+        tituloGraficaTiempo: "Servicios por Mes"
       });
     }
-  }, [filteredData]);
+  }, [filteredData, filters]);
 
   // Manejador para cambios de fecha
   const handleDateChange = (fieldName, value) => {

@@ -4,13 +4,17 @@ import BarChartComponent from './ChartComponents/BarChartComponent';
 import PieChartComponent from './ChartComponents/PieChartComponent';
 
 const ChartGrid = ({ chartData, onChartClick }) => {
+  // Obtener el título dinámico de la gráfica de tiempo (puede ser "Servicios por Mes" o "Servicios por Día")
+  const tituloGraficaTiempo = chartData.tituloGraficaTiempo || "Servicios por Mes";
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {/* Services by Month - Ahora ocupa 2 columnas */}
+      {/* Services by Period (Day or Month) - Ocupa 2 columnas */}
       <div className="col-span-1 md:col-span-2">
         <LineChartComponent 
-          data={chartData.serviciosPorMes}
-          title="Servicios por Mes"
+          data={chartData.serviciosPorPeriodo}
+          title={tituloGraficaTiempo}
+          nameKey="periodo"
         />
       </div>
       

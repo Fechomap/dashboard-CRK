@@ -1,6 +1,10 @@
+// src/hooks/useExcelData.js
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { procesarDatosExcel } from '../utils/excelProcessor';
+import DataService from '../services/DataService';
+
+const STORAGE_KEY = 'dashboard';
 
 export const useExcelData = () => {
   const [data, setData] = useState([]);
@@ -8,54 +12,26 @@ export const useExcelData = () => {
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState('');
   
-  // Cargar datos desde sessionStorage
+  // Cargar datos desde sessionStorage al iniciar
   useEffect(() => {
     try {
-      const savedFileName = sessionStorage.getItem('dashboardFileName');
+      const savedFileName = sessionStorage.getItem(`${STORAGE_KEY}FileName`);
       
       if (savedFileName) {
         setFileName(savedFileName);
         setLoading(true);
         
-        // Intentar cargar el archivo desde sessionStorage
-        const totalChunks = parseInt(sessionStorage.getItem('dashboardTotalChunks') || '0');
+        const loadedData = DataService.loadFromStorage(STORAGE_KEY);
         
-        if (totalChunks > 0) {
-          let allData = [];
-          
-          for (let i = 0; i < totalChunks; i++) {
-            const chunk = sessionStorage.getItem(`dashboardData_chunk_${i}`);
-            if (chunk) {
-              const parsedChunk = JSON.parse(chunk);
-              allData = [...allData, ...parsedChunk];
-            }
-          }
-          
-          // Convertir las fechas de string a Date adecuadamente
-          const processedData = allData.map(item => {
-            // Crear nuevas fechas a partir de los strings ISO
-            const fechaReg = item.fechaRegistro ? new Date(item.fechaRegistro) : null;
-            const fechaAsig = item.fechaAsignacion ? new Date(item.fechaAsignacion) : null;
-            
-            // Verificar que las fechas sean válidas
-            const validFechaReg = fechaReg && !isNaN(fechaReg.getTime()) ? fechaReg : null;
-            const validFechaAsig = fechaAsig && !isNaN(fechaAsig.getTime()) ? fechaAsig : null;
-            
-            return {
-              ...item,
-              fechaRegistro: validFechaReg,
-              fechaAsignacion: validFechaAsig
-            };
-          });
-          
+        if (loadedData.length > 0) {
           // Log para depuración
           console.log('Datos cargados desde sessionStorage:', {
-            totalRegistros: processedData.length,
-            ejemploFechaRegistro: processedData[0]?.fechaRegistro instanceof Date ? 
-              processedData[0].fechaRegistro.toISOString() : 'No es una fecha válida'
+            totalRegistros: loadedData.length,
+            ejemploFechaRegistro: loadedData[0]?.fechaRegistro instanceof Date ? 
+              loadedData[0].fechaRegistro.toISOString() : 'No es una fecha válida'
           });
           
-          setData(processedData);
+          setData(loadedData);
         }
         
         setLoading(false);
@@ -120,39 +96,14 @@ export const useExcelData = () => {
             });
           }
           
-          // Preparar datos para almacenamiento
-          const dataForStorage = datosTransformados.map(item => ({
-            ...item,
-            // Guardar las fechas como strings ISO
-            fechaRegistro: item.fechaRegistro instanceof Date ? 
-              item.fechaRegistro.toISOString() : null,
-            fechaAsignacion: item.fechaAsignacion instanceof Date ? 
-              item.fechaAsignacion.toISOString() : null
-          }));
-          
-          // Guardar en chunks de 100 elementos
-          const chunkSize = 100;
-          const chunks = [];
-          
-          for (let i = 0; i < dataForStorage.length; i += chunkSize) {
-            chunks.push(dataForStorage.slice(i, i + chunkSize));
-          }
-          
           // Limpiar storage anterior
-          clearData();
+          DataService.clearStorage(STORAGE_KEY);
           
-          // Guardar cada chunk
-          chunks.forEach((chunk, index) => {
-            try {
-              sessionStorage.setItem(`dashboardData_chunk_${index}`, JSON.stringify(chunk));
-            } catch (storageError) {
-              console.error(`Error al guardar chunk ${index}:`, storageError);
-            }
-          });
+          // Guardar datos en sessionStorage
+          DataService.saveToStorage(datosTransformados, STORAGE_KEY);
           
-          // Guardar metadatos
-          sessionStorage.setItem('dashboardTotalChunks', chunks.length.toString());
-          sessionStorage.setItem('dashboardFileName', file.name);
+          // Guardar nombre del archivo
+          sessionStorage.setItem(`${STORAGE_KEY}FileName`, file.name);
           
           setData(datosTransformados);
           setFileName(file.name);
@@ -182,14 +133,9 @@ export const useExcelData = () => {
     setData([]);
     setFileName('');
     
-    // Limpiar todos los chunks
-    const totalChunks = parseInt(sessionStorage.getItem('dashboardTotalChunks') || '0');
-    for (let i = 0; i < totalChunks; i++) {
-      sessionStorage.removeItem(`dashboardData_chunk_${i}`);
-    }
-    
-    sessionStorage.removeItem('dashboardTotalChunks');
-    sessionStorage.removeItem('dashboardFileName');
+    // Limpiar storage
+    DataService.clearStorage(STORAGE_KEY);
+    sessionStorage.removeItem(`${STORAGE_KEY}FileName`);
   };
 
   return {

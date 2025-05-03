@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatNumber } from '../../utils/dataFormatters';
 
-const StatsCard = ({ title, value, color = 'blue' }) => {
+const StatsCard = ({ title, value, color = 'blue', prefix = '' }) => {
   const bgColors = {
     blue: 'bg-blue-50',
     green: 'bg-green-50',
@@ -20,7 +20,7 @@ const StatsCard = ({ title, value, color = 'blue' }) => {
     <div className={`p-4 rounded shadow ${bgColors[color]}`}>
       <h3 className="text-sm font-medium text-gray-500">{title}</h3>
       <p className={`text-2xl font-semibold ${textColors[color]}`}>
-        {formatNumber(value)}
+        {prefix}{formatNumber(value)}
       </p>
     </div>
   );

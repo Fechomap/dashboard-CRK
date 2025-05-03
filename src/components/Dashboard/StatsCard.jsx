@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatNumber } from '../../utils/dataFormatters.js';
+import { formatNumber } from '../../utils/dataFormatters';
 
 const StatsCard = ({ title, value, color = 'blue' }) => {
   const bgColors = {

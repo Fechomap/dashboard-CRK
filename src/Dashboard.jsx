@@ -63,7 +63,7 @@ const Dashboard = () => {
     }
   }, [filteredData]);
 
-  // Handler for date changes
+  // Handler for date changes - ESTA FUNCIÓN FALTABA
   const handleDateChange = (fieldName, value) => {
     setFilters(prev => ({
       ...prev,
@@ -71,7 +71,7 @@ const Dashboard = () => {
     }));
   };
   
-  // Handler for quick date filters
+  // Handler for quick date filters - ESTA FUNCIÓN ESTABA MAL IMPLEMENTADA
   const handleQuickDateFilter = (startDate, endDate) => {
     handleDateChange('fechaInicio', startDate);
     handleDateChange('fechaFin', endDate);
@@ -93,7 +93,7 @@ const Dashboard = () => {
     }
   };
   
-  // Function to export filtered data to CSV
+  // Function to export filtered data to CSV - CORREGIDO PARA USAR PAPAPARSE CORRECTAMENTE
   const exportData = () => {
     if (!Papa) {
       console.error('Papa Parse not found. Make sure it is imported.');

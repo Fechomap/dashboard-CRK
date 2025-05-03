@@ -173,7 +173,7 @@ export const procesarDatosExcel = (jsonData) => {
   return datosProcesados;
 };
 
-// Extraer opciones únicas para filtros
+// 1. Ordenar operadores por número de servicios - Modificar src/utils/excelProcessor.js
 export const extractFilterOptions = (data) => {
   if (!data || !Array.isArray(data) || data.length === 0) {
     return {
@@ -182,7 +182,18 @@ export const extractFilterOptions = (data) => {
     };
   }
   
-  const operadores = [...new Set(data.map(item => item.operador).filter(Boolean))];
+  // Contar servicios por operador para ordenamiento
+  const conteoOperadores = {};
+  data.forEach(item => {
+    if (item.operador) {
+      conteoOperadores[item.operador] = (conteoOperadores[item.operador] || 0) + 1;
+    }
+  });
+  
+  // Obtener operadores únicos y ordenarlos por cantidad de servicios (mayor a menor)
+  const operadores = [...new Set(data.map(item => item.operador).filter(Boolean))]
+    .sort((a, b) => (conteoOperadores[b] || 0) - (conteoOperadores[a] || 0));
+  
   const estatus = [...new Set(data.map(item => item.estatus).filter(Boolean))];
   
   return {

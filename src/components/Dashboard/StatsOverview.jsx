@@ -9,9 +9,23 @@ const StatsOverview = ({ filteredData }) => {
     item => item.estatus === 'Concluido'
   ).length;
   
+  // Mejorar el cálculo del promedio asegurando que los valores son números válidos
   const averageCost = filteredData.length > 0 
     ? Math.round(
-        filteredData.reduce((acc, item) => acc + (item.costoTotal || 0), 0) / filteredData.length
+        filteredData.reduce((acc, item) => {
+          // Asegurar que costoTotal es un número válido
+          let costo = 0;
+          if (item.costoTotal !== undefined && item.costoTotal !== null) {
+            // Si es string, intentar convertir a número
+            if (typeof item.costoTotal === 'string') {
+              costo = parseFloat(item.costoTotal.replace(/[^\d.-]/g, '')) || 0;
+            } else {
+              costo = Number(item.costoTotal) || 0;
+            }
+          }
+          // Ignorar NaN o valores no numéricos en el cálculo
+          return acc + (isNaN(costo) ? 0 : costo);
+        }, 0) / filteredData.length
       )
     : 0;
   

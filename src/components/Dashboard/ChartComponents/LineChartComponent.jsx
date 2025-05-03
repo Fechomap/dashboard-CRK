@@ -59,7 +59,7 @@ const LineChartComponent = ({ data, title, nameKey = "periodo" }) => {
               textAnchor="end" // Alinear el texto al final
               height={60} // Aumentar espacio para etiquetas
               tick={{ fontSize: 11 }} // Tamaño de fuente ajustado
-              interval={esDia && data.length > 15 ? Math.floor(data.length / 15) : 0} // Espaciado dinámico de etiquetas
+              interval={0} // Mostrar TODAS las etiquetas siempre, especialmente para días
               tickFormatter={formatearEtiqueta} // Formato personalizado para etiquetas
             />
             <YAxis />
@@ -75,7 +75,8 @@ const LineChartComponent = ({ data, title, nameKey = "periodo" }) => {
               strokeWidth={2} // Línea más gruesa
               activeDot={{ r: 8, stroke: '#8884d8', strokeWidth: 2, fill: '#fff' }} // Punto activo más visible
               dot={{ 
-                r: esDia && data.length > 20 ? 0 : 4, // No mostrar puntos si hay muchos días
+                // Siempre mostrar puntos en la gráfica de días, independiente de la cantidad 
+                r: 4, 
                 strokeWidth: 2,
                 stroke: '#8884d8',
                 fill: '#fff'

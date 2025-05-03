@@ -93,8 +93,8 @@ class PDFExportService {
         const statsData = [
           ['Total de Servicios', stats.totalServices.toString()],
           ['Servicios Concluidos', stats.completedServices.toString()],
-          ['Costo Total', `$${stats.totalCost.toLocaleString('es-MX')}`],
-          ['Promedio Costo Total', `$${stats.averageCost.toLocaleString('es-MX')}`],
+          ['Costo Total', `${stats.totalCost.toLocaleString('es-MX')}`],
+          ['Promedio Costo Total', `${stats.averageCost.toLocaleString('es-MX')}`],
           ['Operadores Activos', stats.activeOperators.toString()]
         ];
         
@@ -141,9 +141,98 @@ class PDFExportService {
         pdf.text('Gráficas', margin, yPos);
         yPos += 8;
         
+        // Configuración mejorada para el retraso antes de la captura
+        const captureWithDelay = async (chart, index) => {
+          // Esperar para asegurar que las gráficas estén completamente renderizadas
+          await new Promise(resolve => setTimeout(resolve, 200 * (index + 1)));
+          
+          try {
+            // Opciones mejoradas para html2canvas
+            const canvas = await html2canvas(chart, {
+              scale: 2,
+              logging: false,
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#ffffff',
+              imageTimeout: 15000,
+              // Opciones mejoradas para SVG
+              foreignObjectRendering: false,
+              // Opción para esperar a que los elementos estén cargados
+              onclone: (document, clone) => {
+                // Este callback se llama cuando el DOM ha sido clonado pero antes de renderizar
+                // Se puede usar para manipular el clon antes de renderizar
+                const svgElements = clone.querySelectorAll('svg');
+                svgElements.forEach(svg => {
+                  // Asegurarse de que los SVG tengan dimensiones explícitas
+                  if (!svg.getAttribute('width')) {
+                    const rect = svg.getBoundingClientRect();
+                    svg.setAttribute('width', rect.width);
+                    svg.setAttribute('height', rect.height);
+                  }
+                });
+                return new Promise(resolve => setTimeout(resolve, 500));
+              }
+            });
+            
+            // Obtener datos de imagen
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            
+            // Verificar que la imagen tenga datos válidos
+            if (imgData === 'data:,') {
+              throw new Error('Canvas generó una imagen vacía');
+            }
+            
+            // Calcular la altura proporcional para mantener la relación de aspecto
+            const imgWidth = contentWidth;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            
+            if (imgHeight <= 0) {
+              throw new Error('Altura de imagen inválida');
+            }
+            
+            // Comprobar si la imagen cabe en la página actual
+            if (yPos + imgHeight > pageHeight - margin) {
+              pdf.addPage();
+              yPos = margin;
+            }
+            
+            // Añadir título para cada gráfica
+            let chartTitle = "Gráfica";
+            
+            // Intentar obtener el título de la gráfica desde el elemento DOM
+            const titleElement = chart.querySelector('h3');
+            if (titleElement && titleElement.textContent) {
+              chartTitle = titleElement.textContent;
+            }
+            
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(chartTitle, margin, yPos);
+            yPos += 5;
+            
+            // Añadir imagen al PDF
+            pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
+            
+            // Actualizar posición Y para el siguiente elemento
+            yPos += imgHeight + 15;
+            
+            return true;
+          } catch (error) {
+            console.error(`Error al procesar gráfico ${index}:`, error);
+            // En caso de error, agregar un mensaje en el PDF
+            pdf.setFontSize(9);
+            pdf.setTextColor(200, 0, 0);
+            pdf.text(`[No se pudo cargar la gráfica ${index + 1}]`, margin, yPos);
+            pdf.setTextColor(0, 0, 0);
+            yPos += 10;
+            return false;
+          }
+        };
+        
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'normal');
         
+        // Procesar los gráficos de manera secuencial para evitar problemas de memoria
         for (let i = 0; i < charts.length; i++) {
           const chart = charts[i];
           if (!chart) continue;
@@ -154,35 +243,7 @@ class PDFExportService {
             yPos = margin;
           }
           
-          try {
-            // Convertir gráfico a canvas
-            const canvas = await html2canvas(chart, {
-              scale: 2, // Mayor escala para mejor calidad
-              logging: false,
-              useCORS: true
-            });
-            
-            // Obtener datos de imagen
-            const imgData = canvas.toDataURL('image/png');
-            
-            // Calcular la altura proporcional para mantener la relación de aspecto
-            const imgWidth = contentWidth;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            
-            // Comprobar si la imagen cabe en la página actual
-            if (yPos + imgHeight > pageHeight - margin) {
-              pdf.addPage();
-              yPos = margin;
-            }
-            
-            // Añadir imagen al PDF
-            pdf.addImage(imgData, 'PNG', margin, yPos, imgWidth, imgHeight);
-            
-            // Actualizar posición Y para el siguiente elemento
-            yPos += imgHeight + 10;
-          } catch (error) {
-            console.error(`Error al procesar gráfico ${i}:`, error);
-          }
+          await captureWithDelay(chart, i);
         }
       }
       
@@ -200,8 +261,18 @@ class PDFExportService {
         );
       }
       
-      // Guardar el PDF
-      pdf.save(filename);
+      // Crear un botón de descarga en lugar de guardar automáticamente
+      // Esto ayuda en algunos navegadores donde el método save() puede fallar
+      const pdfOutput = pdf.output('blob');
+      const url = URL.createObjectURL(pdfOutput);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
       return true;
     } catch (error) {

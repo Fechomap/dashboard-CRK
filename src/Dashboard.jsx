@@ -1,5 +1,5 @@
 // src/Dashboard.jsx
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 // Common Components
 import LoadingSpinner from './components/common/LoadingSpinner';
@@ -39,6 +39,16 @@ const Dashboard = () => {
     handleChartClick,
     exportData
   } = useDashboard();
+  
+  // Referencia local para las estadísticas
+  const statsContainerRef = useRef(null);
+  
+  // Sincronizar la referencia local con el contexto
+  useEffect(() => {
+    if (statsRef && statsContainerRef.current) {
+      statsRef.current = statsContainerRef.current;
+    }
+  }, [statsRef, data, filteredData]);
   
   // Mostrar estado de carga
   if (loading) {
@@ -90,15 +100,17 @@ const Dashboard = () => {
             />
             
             {/* Stats Overview */}
-            <div ref={statsRef}>
+            <div ref={statsContainerRef} id="stats-overview">
               <StatsOverview filteredData={filteredData} />
             </div>
             
             {/* Charts Grid */}
-            <ChartGrid 
-              chartData={chartData}
-              onChartClick={handleChartClick}
-            />
+            <div id="charts-container">
+              <ChartGrid 
+                chartData={chartData}
+                onChartClick={handleChartClick}
+              />
+            </div>
             
             {/* Data Table */}
             <DataTable data={filteredData} />
@@ -115,6 +127,26 @@ const Dashboard = () => {
           Dashboard de Análisis de Servicios - v1.0.0
         </div>
       </footer>
+      
+      {/* Estilos específicos para la impresión de gráficas */}
+      <style jsx="true">{`
+        @media print {
+          .recharts-wrapper {
+            width: 100% !important;
+            height: auto !important;
+          }
+          
+          .recharts-surface {
+            width: 100% !important;
+            height: auto !important;
+          }
+          
+          .recharts-legend-wrapper {
+            position: relative !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };

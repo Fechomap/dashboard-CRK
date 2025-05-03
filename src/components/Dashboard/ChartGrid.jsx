@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import LineChartComponent from './ChartComponents/LineChartComponent';
 import BarChartComponent from './ChartComponents/BarChartComponent';
 import PieChartComponent from './ChartComponents/PieChartComponent';
@@ -15,6 +15,22 @@ const ChartGrid = ({ chartData, onChartClick }) => {
   const unitChartRef = useRef(null);
   const clientChartRef = useRef(null);
   const hourChartRef = useRef(null);
+  
+  // Obtener la función del contexto para registrar referencias
+  const { chartRefs } = useDashboard();
+  
+  // Registrar referencias para exportación
+  useEffect(() => {
+    // Actualizar referencias en el contexto
+    if (chartRefs) {
+      chartRefs.lineChart = lineChartRef;
+      chartRefs.operatorChart = operatorChartRef;
+      chartRefs.statusChart = statusChartRef;
+      chartRefs.unitChart = unitChartRef;
+      chartRefs.clientChart = clientChartRef;
+      chartRefs.hourChart = hourChartRef;
+    }
+  }, [chartRefs]);
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

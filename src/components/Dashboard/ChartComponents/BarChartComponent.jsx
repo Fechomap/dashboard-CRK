@@ -11,8 +11,9 @@ const BarChartComponent = ({
   onClick = null,
   fullWidth = false
 }) => {
-  // Determinar si estamos mostrando la gráfica de 24 horas
+  // Determinar si estamos mostrando la gráfica de 24 horas o la de unidades operativas
   const is24HourChart = title === "Distribución de Contactos por Hora del Día";
+  const isUnitChart = title === "Servicios por Unidad Operativa";
   
   if (!data || data.length === 0) {
     return (
@@ -25,13 +26,13 @@ const BarChartComponent = ({
     );
   }
   
-  // Aumentar la altura para la gráfica de 24 horas
-  const chartHeight = is24HourChart ? 400 : 240;
+  // Aumentar la altura para la gráfica de 24 horas o unidades operativas
+  const chartHeight = is24HourChart ? 400 : (isUnitChart && !vertical ? 400 : 240);
   
   return (
     <div className="bg-white p-4 rounded shadow">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
-      <div className={`${is24HourChart ? 'h-96' : 'h-64'}`}>
+      <div className={`${is24HourChart || (isUnitChart && !vertical) ? 'h-96' : 'h-64'}`}>
         <ResponsiveContainer width="100%" height="100%">
           {vertical ? (
             <BarChart
@@ -64,18 +65,18 @@ const BarChartComponent = ({
                 top: 5, 
                 right: 30, 
                 left: 20, 
-                // Aumentar el margen inferior si es la gráfica de 24 horas para dar más espacio a las etiquetas
-                bottom: is24HourChart ? 20 : 5 
+                // Aumentar el margen inferior para todas las gráficas horizontales
+                bottom: 100 
               }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis 
                 dataKey={nameKey} 
-                // Ajustes específicos para la gráfica de 24 horas
-                angle={is24HourChart ? -45 : 0}
-                textAnchor={is24HourChart ? "end" : "middle"}
-                height={is24HourChart ? 60 : 30}
-                tick={{ fontSize: is24HourChart ? 10 : 12 }}
+                // Aplicar rotación a todas las etiquetas de gráficas horizontales
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                tick={{ fontSize: 11 }}
                 interval={0} // Mostrar todas las etiquetas
               />
               <YAxis />

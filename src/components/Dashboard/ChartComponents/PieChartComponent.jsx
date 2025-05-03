@@ -22,6 +22,32 @@ const PieChartComponent = ({
     );
   }
   
+  // Función personalizada para renderizar etiquetas externas
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
+    // Calcular la posición de la etiqueta externa
+    const RADIAN = Math.PI / 180;
+    const radius = outerRadius * 1.2; // Aumentar el radio para alejar las etiquetas del centro
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    
+    // Solo mostrar el porcentaje si es mayor al 3% para evitar etiquetas muy pequeñas
+    if (percent < 0.03) return null;
+    
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill={COLORS[index % COLORS.length]}
+        textAnchor={x > cx ? 'start' : 'end'} 
+        dominantBaseline="central"
+        fontSize={12}
+        fontWeight="bold"
+      >
+        {`${name}: ${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
   return (
     <div className="bg-white p-4 rounded shadow">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
@@ -37,7 +63,7 @@ const PieChartComponent = ({
               fill="#8884d8"
               dataKey={dataKey}
               nameKey={nameKey}
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+              label={renderCustomizedLabel}
               onClick={onClick}
             >
               {data.map((entry, index) => (
@@ -45,7 +71,11 @@ const PieChartComponent = ({
               ))}
             </Pie>
             <Tooltip formatter={(value, name, props) => [`${value} servicios`, props.payload[nameKey]]} />
-            <Legend />
+            <Legend 
+              layout="horizontal" 
+              verticalAlign="bottom" 
+              align="center"
+            />
           </PieChart>
         </ResponsiveContainer>
       </div>

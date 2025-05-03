@@ -1,6 +1,15 @@
 import React from 'react';
 
 const CheckboxFilter = ({ title, options, selectedValues, onChange, onSelectAll }) => {
+  // Convertir el título para generar el nombre del filtro
+  // Esto garantiza consistencia con los nombres de filtros en useFilters.js
+  const getFilterName = (title) => {
+    if (title === "Operadores") return "operador";
+    if (title === "Estado") return "estatus";
+    return title.toLowerCase();
+  };
+  
+  const filterName = getFilterName(title);
   const isAllSelected = options.length > 0 && selectedValues.length === options.length;
   
   return (
@@ -10,12 +19,12 @@ const CheckboxFilter = ({ title, options, selectedValues, onChange, onSelectAll 
         <div className="flex items-center">
           <input
             type="checkbox"
-            id={`select-all-${title.toLowerCase()}`}
+            id={`select-all-${filterName}`}
             checked={isAllSelected}
-            onChange={(e) => onSelectAll(title.toLowerCase(), e.target.checked ? options : [])}
+            onChange={(e) => onSelectAll(filterName, e.target.checked ? options : [])}
             className="h-4 w-4 text-blue-600 border-gray-300 rounded"
           />
-          <label htmlFor={`select-all-${title.toLowerCase()}`} className="ml-2 text-sm text-gray-700">
+          <label htmlFor={`select-all-${filterName}`} className="ml-2 text-sm text-gray-700">
             Seleccionar todos
           </label>
         </div>
@@ -29,14 +38,14 @@ const CheckboxFilter = ({ title, options, selectedValues, onChange, onSelectAll 
               <div key={option} className="flex items-center">
                 <input
                   type="checkbox"
-                  id={`${title.toLowerCase()}-${option}`}
+                  id={`${filterName}-${option}`}
                   value={option}
                   checked={selectedValues.includes(option)}
-                  onChange={(e) => onChange(title.toLowerCase(), option, e.target.checked)}
+                  onChange={(e) => onChange(filterName, option, e.target.checked)}
                   className="h-4 w-4 text-blue-600 border-gray-300 rounded"
                 />
                 <label
-                  htmlFor={`${title.toLowerCase()}-${option}`}
+                  htmlFor={`${filterName}-${option}`}
                   className="ml-2 text-sm text-gray-700 truncate"
                   title={option}
                 >

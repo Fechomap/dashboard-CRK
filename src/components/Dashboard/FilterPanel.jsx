@@ -11,6 +11,10 @@ const FilterPanel = ({
   onQuickDateFilter,
   onSelectAll 
 }) => {
+  // Validar que las opciones y filtros existan antes de pasarlos
+  const operadores = filterOptions?.operadores || [];
+  const estatus = filterOptions?.estatus || [];
+  
   return (
     <div className="bg-white p-6 rounded shadow mb-6">
       <h2 className="text-lg font-semibold mb-4">Filtros</h2>
@@ -33,8 +37,8 @@ const FilterPanel = ({
           {/* Status Filter */}
           <CheckboxFilter
             title="Estado"
-            options={filterOptions.estatus}
-            selectedValues={filters.estatus}
+            options={estatus}
+            selectedValues={filters.estatus || []}
             onChange={onCheckboxChange}
             onSelectAll={onSelectAll}
           />
@@ -44,8 +48,8 @@ const FilterPanel = ({
           {/* Operators Filter */}
           <CheckboxFilter
             title="Operadores"
-            options={filterOptions.operadores}
-            selectedValues={filters.operador}
+            options={operadores}
+            selectedValues={filters.operador || []}
             onChange={onCheckboxChange}
             onSelectAll={onSelectAll}
           />

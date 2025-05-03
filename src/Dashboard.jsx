@@ -49,21 +49,38 @@ const Dashboard = () => {
   
   // Update filter options when data changes
   useEffect(() => {
-    if (data.length > 0) {
-      const options = extractFilterOptions(data);
-      setFilterOptions(options);
+    if (data && data.length > 0) {
+      try {
+        const options = extractFilterOptions(data);
+        setFilterOptions(options);
+      } catch (error) {
+        console.error("Error al extraer opciones de filtro:", error);
+      }
     }
   }, [data]);
   
   // Update chart data when filtered data changes
   useEffect(() => {
-    if (filteredData.length > 0) {
-      const newChartData = generateChartData(filteredData);
-      setChartData(newChartData);
+    if (filteredData && filteredData.length > 0) {
+      try {
+        const newChartData = generateChartData(filteredData);
+        setChartData(newChartData);
+      } catch (error) {
+        console.error("Error al generar datos para gráficas:", error);
+      }
+    } else {
+      // Si no hay datos filtrados, establecer gráficos vacíos
+      setChartData({
+        serviciosPorMes: [],
+        serviciosPorOperador: [],
+        serviciosPorUnidad: [],
+        serviciosPorEstatus: [],
+        tiemposDeAtencion: []
+      });
     }
   }, [filteredData]);
 
-  // Handler for date changes - ESTA FUNCIÓN FALTABA
+  // Handler for date changes
   const handleDateChange = (fieldName, value) => {
     setFilters(prev => ({
       ...prev,
@@ -71,60 +88,81 @@ const Dashboard = () => {
     }));
   };
   
-  // Handler for quick date filters - ESTA FUNCIÓN ESTABA MAL IMPLEMENTADA
+  // Handler for quick date filters
   const handleQuickDateFilter = (startDate, endDate) => {
-    handleDateChange('fechaInicio', startDate);
-    handleDateChange('fechaFin', endDate);
+    setFilters(prev => ({
+      ...prev,
+      fechaInicio: startDate,
+      fechaFin: endDate
+    }));
   };
   
   // Handler for chart clicks to update filters
   const handleChartClick = (chartType, data) => {
     if (!data || !data.payload) return;
     
-    switch (chartType) {
-      case 'operador':
-        handleCheckboxChange('operador', data.payload.operador, !filters.operador.includes(data.payload.operador));
-        break;
-      case 'estatus':
-        handleCheckboxChange('estatus', data.payload.estatus, !filters.estatus.includes(data.payload.estatus));
-        break;
-      default:
-        break;
+    try {
+      switch (chartType) {
+        case 'operador':
+          const operadorValue = data.payload.operador;
+          const isOperadorSelected = filters.operador.includes(operadorValue);
+          handleCheckboxChange('operador', operadorValue, !isOperadorSelected);
+          break;
+        case 'estatus':
+          const estatusValue = data.payload.estatus;
+          const isEstatusSelected = filters.estatus.includes(estatusValue);
+          handleCheckboxChange('estatus', estatusValue, !isEstatusSelected);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error("Error al manejar clic en gráfica:", error);
     }
   };
   
-  // Function to export filtered data to CSV - CORREGIDO PARA USAR PAPAPARSE CORRECTAMENTE
+  // Function to export filtered data to CSV
   const exportData = () => {
-    if (!Papa) {
-      console.error('Papa Parse not found. Make sure it is imported.');
+    if (!filteredData || filteredData.length === 0) {
+      alert("No hay datos para exportar");
       return;
     }
     
-    const datosParaExportar = filteredData.map(item => ({
-      numero: item.numero,
-      fechaRegistro: item.fechaRegistro instanceof Date 
-        ? item.fechaRegistro.toISOString() 
-        : item.fechaRegistro,
-      fechaAsignacion: item.fechaAsignacion instanceof Date 
-        ? item.fechaAsignacion.toISOString() 
-        : item.fechaAsignacion,
-      operador: item.operador,
-      unidadOperativa: item.unidadOperativa,
-      cuenta: item.cuenta,
-      estatus: item.estatus,
-      costoTotal: item.costoTotal
-    }));
-    
-    const csv = Papa.unparse(datosParaExportar);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'datos_filtrados.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      if (!Papa) {
+        console.error('Papa Parse not found. Make sure it is imported.');
+        return;
+      }
+      
+      const datosParaExportar = filteredData.map(item => ({
+        numero: item.numero,
+        fechaRegistro: item.fechaRegistro instanceof Date 
+          ? item.fechaRegistro.toISOString().split('T')[0]
+          : item.fechaRegistro,
+        fechaAsignacion: item.fechaAsignacion instanceof Date 
+          ? item.fechaAsignacion.toISOString().split('T')[0]
+          : item.fechaAsignacion,
+        operador: item.operador,
+        unidadOperativa: item.unidadOperativa,
+        cuenta: item.cuenta,
+        estatus: item.estatus,
+        costoTotal: item.costoTotal
+      }));
+      
+      const csv = Papa.unparse(datosParaExportar);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'datos_filtrados.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error al exportar datos:", error);
+      alert("Error al exportar los datos");
+    }
   };
   
   // Show loading state

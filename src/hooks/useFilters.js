@@ -12,7 +12,13 @@ export const useFilters = (initialData = []) => {
   
   // Actualizar los datos filtrados cuando cambian los filtros o los datos iniciales
   useEffect(() => {
-    applyFilters();
+    try {
+      applyFilters();
+    } catch (error) {
+      console.error("Error al aplicar filtros:", error);
+      // En caso de error, mostrar los datos sin filtrar
+      setFilteredData(initialData);
+    }
   }, [filters, initialData]);
   
   // Función para aplicar filtros
@@ -20,16 +26,16 @@ export const useFilters = (initialData = []) => {
     let result = [...initialData];
     
     // Filtrar por operador
-    if (filters.operador.length > 0) {
+    if (filters.operador && filters.operador.length > 0) {
       result = result.filter(item => 
-        filters.operador.includes(item.operador)
+        item.operador && filters.operador.includes(item.operador)
       );
     }
     
     // Filtrar por estatus
-    if (filters.estatus.length > 0) {
+    if (filters.estatus && filters.estatus.length > 0) {
       result = result.filter(item => 
-        filters.estatus.includes(item.estatus)
+        item.estatus && filters.estatus.includes(item.estatus)
       );
     }
     
@@ -54,16 +60,27 @@ export const useFilters = (initialData = []) => {
   
   // Manejador de cambio de filtro de checkbox
   const handleCheckboxChange = (filterName, value, isChecked) => {
+    // Validar que filterName sea uno de los filtros válidos
+    if (!Object.keys(filters).includes(filterName)) {
+      console.error(`Filtro no válido: ${filterName}`);
+      return;
+    }
+    
     setFilters(prev => {
+      // Verificar que el array existe antes de operar
+      const currentArray = prev[filterName] || [];
+      
       if (isChecked) {
+        // Añadir el valor al array si no existe
         return {
           ...prev,
-          [filterName]: [...prev[filterName], value]
+          [filterName]: [...currentArray, value]
         };
       } else {
+        // Eliminar el valor del array
         return {
           ...prev,
-          [filterName]: prev[filterName].filter(v => v !== value)
+          [filterName]: currentArray.filter(v => v !== value)
         };
       }
     });
@@ -71,6 +88,12 @@ export const useFilters = (initialData = []) => {
   
   // Manejador para seleccionar todos
   const selectAll = (filterName, values) => {
+    // Validar que filterName sea uno de los filtros válidos
+    if (!Object.keys(filters).includes(filterName)) {
+      console.error(`Filtro no válido: ${filterName}`);
+      return;
+    }
+    
     setFilters(prev => ({
       ...prev,
       [filterName]: [...values]
@@ -79,6 +102,12 @@ export const useFilters = (initialData = []) => {
   
   // Manejador para eliminar todos
   const removeAll = (filterName) => {
+    // Validar que filterName sea uno de los filtros válidos
+    if (!Object.keys(filters).includes(filterName)) {
+      console.error(`Filtro no válido: ${filterName}`);
+      return;
+    }
+    
     setFilters(prev => ({
       ...prev,
       [filterName]: []

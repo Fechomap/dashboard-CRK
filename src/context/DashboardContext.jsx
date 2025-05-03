@@ -1,9 +1,10 @@
 // src/context/DashboardContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useExcelData } from '../hooks/useExcelData';
 import { useFilters } from '../hooks/useFilters';
 import { extractFilterOptions } from '../utils/excelProcessor';
 import { generateChartData } from '../utils/chartDataGenerator';
+import PDFExportService from '../services/PDFExportService';
 
 // Crear el contexto
 const DashboardContext = createContext();
@@ -40,6 +41,19 @@ export const DashboardProvider = ({ children }) => {
     setFilters
   } = useFilters(data);
   
+  // Referencias a los elementos de gráficos para exportación
+  const chartRefs = {
+    lineChart: useRef(null),
+    operatorChart: useRef(null),
+    statusChart: useRef(null),
+    unitChart: useRef(null),
+    clientChart: useRef(null),
+    hourChart: useRef(null)
+  };
+  
+  // Referencias a estadísticas
+  const statsRef = useRef(null);
+  
   // Estados adicionales
   const [filterOptions, setFilterOptions] = useState({
     operadores: [],
@@ -55,6 +69,8 @@ export const DashboardProvider = ({ children }) => {
     serviciosPorHora: [],
     tituloGraficaTiempo: "Servicios por Mes"
   });
+  
+  const [exportLoading, setExportLoading] = useState(false);
   
   // Actualizar opciones de filtro cuando cambian los datos
   useEffect(() => {
@@ -149,49 +165,83 @@ export const DashboardProvider = ({ children }) => {
     }
   };
   
-  // Exportar datos filtrados a CSV
-  const exportData = () => {
+  // Exportar gráficos a PDF
+  const exportData = async () => {
     if (!filteredData || filteredData.length === 0) {
       alert("No hay datos para exportar");
       return;
     }
     
     try {
-      // Verificar que Papa está disponible
-      const Papa = window.Papa;
-      if (!Papa) {
-        console.error('Papa Parse not found. Make sure it is imported.');
-        return;
-      }
+      setExportLoading(true);
       
-      const datosParaExportar = filteredData.map(item => ({
-        numero: item.numero,
-        fechaRegistro: item.fechaRegistro instanceof Date 
-          ? item.fechaRegistro.toISOString().split('T')[0]
-          : item.fechaRegistro,
-        fechaAsignacion: item.fechaAsignacion instanceof Date 
-          ? item.fechaAsignacion.toISOString().split('T')[0]
-          : item.fechaAsignacion,
-        operador: item.operador,
-        unidadOperativa: item.unidadOperativa,
-        cuenta: item.cuenta,
-        estatus: item.estatus,
-        costoTotal: item.costoTotal
-      }));
+      // Recopilar referencias de gráficos
+      const chartElements = [
+        chartRefs.lineChart.current,
+        chartRefs.operatorChart.current,
+        chartRefs.statusChart.current,
+        chartRefs.unitChart.current,
+        chartRefs.clientChart.current,
+        chartRefs.hourChart.current
+      ].filter(Boolean); // Filtrar referencias nulas
       
-      const csv = Papa.unparse(datosParaExportar);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
+      // Calcular estadísticas
+      const totalServices = filteredData.length;
+      const completedServices = filteredData.filter(item => item.estatus === 'Concluido').length;
       
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'datos_filtrados.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const totalCostSum = filteredData.reduce((acc, item) => {
+        let costo = 0;
+        if (item.costoTotal !== undefined && item.costoTotal !== null) {
+          if (typeof item.costoTotal === 'string') {
+            costo = parseFloat(item.costoTotal.replace(/[^\d.-]/g, '')) || 0;
+          } else {
+            costo = Number(item.costoTotal) || 0;
+          }
+        }
+        return acc + (isNaN(costo) ? 0 : costo);
+      }, 0);
+      
+      const totalCost = Math.round(totalCostSum);
+      const averageCost = filteredData.length > 0 ? Math.round(totalCostSum / filteredData.length) : 0;
+      
+      const activeOperators = new Set(
+        filteredData.map(item => item.operador).filter(Boolean)
+      ).size;
+      
+      // Estadísticas para el PDF
+      const stats = {
+        totalServices,
+        completedServices,
+        totalCost,
+        averageCost,
+        activeOperators
+      };
+      
+      // Generar nombre de archivo
+      const fileDate = new Date().toISOString().split('T')[0];
+      const pdfFileName = `dashboard-report-${fileDate}.pdf`;
+      
+      // Exportar a PDF
+      await PDFExportService.exportToPDF({
+        charts: chartElements,
+        stats,
+        filename: pdfFileName,
+        filters,
+        fileName
+      });
+      
+      setExportLoading(false);
     } catch (error) {
       console.error("Error al exportar datos:", error);
-      alert("Error al exportar los datos");
+      alert(`Error al exportar: ${error.message}`);
+      setExportLoading(false);
+    }
+  };
+  
+  // Función para registrar referencias de gráficos
+  const registerChartRef = (name, ref) => {
+    if (name && ref) {
+      chartRefs[name] = ref;
     }
   };
   
@@ -206,6 +256,11 @@ export const DashboardProvider = ({ children }) => {
     filters,
     filterOptions,
     chartData,
+    exportLoading,
+    
+    // Referencias
+    chartRefs,
+    statsRef,
     
     // Funciones
     handleFileUpload,
@@ -217,7 +272,8 @@ export const DashboardProvider = ({ children }) => {
     handleDateChange,
     handleQuickDateFilter,
     handleChartClick,
-    exportData
+    exportData,
+    registerChartRef
   };
   
   return (

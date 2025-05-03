@@ -12,6 +12,7 @@ import StatsOverview from './components/Dashboard/StatsOverview';
 import ChartGrid from './components/Dashboard/ChartGrid';
 import DataTable from './components/Dashboard/DataTable';
 import EmptyState from './components/Dashboard/EmptyState';
+import AnalyticsAssistant from './components/Dashboard/AnalyticsAssistant';
 
 // Context
 import { useDashboard } from './context/DashboardContext';
@@ -26,6 +27,8 @@ const Dashboard = () => {
     filterOptions,
     filters,
     chartData,
+    exportLoading,
+    statsRef,
     handleFileUpload, 
     clearData,
     handleCheckboxChange,
@@ -67,6 +70,7 @@ const Dashboard = () => {
         onExportData={exportData}
         onClearData={clearData}
         fileName={fileName}
+        exportLoading={exportLoading}
       />
       
       {/* Main content */}
@@ -86,7 +90,9 @@ const Dashboard = () => {
             />
             
             {/* Stats Overview */}
-            <StatsOverview filteredData={filteredData} />
+            <div ref={statsRef}>
+              <StatsOverview filteredData={filteredData} />
+            </div>
             
             {/* Charts Grid */}
             <ChartGrid 
@@ -96,6 +102,9 @@ const Dashboard = () => {
             
             {/* Data Table */}
             <DataTable data={filteredData} />
+            
+            {/* Analytics Assistant */}
+            <AnalyticsAssistant />
           </>
         )}
       </main>

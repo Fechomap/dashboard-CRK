@@ -13,11 +13,24 @@ export const generateChartData = (datos) => {
       serviciosPorUnidad: [],
       serviciosPorEstatus: [],
       serviciosPorCliente: [],
-      tiemposDeAtencion: []
+      serviciosPorHora: []
     };
   }
 
   try {
+    // Verificación de la existencia de la columna TC/tc en el primer elemento
+    if (datos.length > 0) {
+      const primeraFila = datos[0];
+      const todasLasColumnas = Object.keys(primeraFila);
+      console.log("Columnas disponibles:", todasLasColumnas);
+      
+      // Verificar si existe la columna tc (minúsculas) o TC (mayúsculas)
+      const existeTC = todasLasColumnas.includes('TC');
+      const existeTc = todasLasColumnas.includes('tc');
+      console.log("¿Existe columna TC?", existeTC);
+      console.log("¿Existe columna tc?", existeTc);
+    }
+
     // 1. Services by month
     const serviciosPorMes = _.chain(datos)
       .groupBy(d => {
@@ -56,57 +69,114 @@ export const generateChartData = (datos) => {
       .sortBy([o => -o.cantidad])
       .value();
     
-    // 5. Services by client - NUEVA FUNCIONALIDAD
+    // 5. Services by client
     const serviciosPorCliente = _.chain(datos)
       .groupBy(d => d.cliente || 'Sin cliente')
       .map((value, key) => ({ cliente: key, cantidad: value.length }))
-      .sortBy([o => o.cantidad]) // Ordenados de menor a mayor según lo solicitado
+      .sortBy([o => o.cantidad])
       .value();
     
-    // 6. Response times
-    const tiempos = [];
-    for (const d of datos) {
-      try {
-        if (!d.fechaRegistro || !d.fechaAsignacion) continue;
-        
-        const fechaReg = d.fechaRegistro instanceof Date ? d.fechaRegistro : new Date(d.fechaRegistro);
-        const fechaAsig = d.fechaAsignacion instanceof Date ? d.fechaAsignacion : new Date(d.fechaAsignacion);
-        
-        if (isNaN(fechaReg.getTime()) || isNaN(fechaAsig.getTime())) continue;
-        
-        const diffMinutos = (fechaAsig - fechaReg) / (1000 * 60);
-        
-        if (isNaN(diffMinutos) || diffMinutos < 0 || diffMinutos > 10000) continue;
-        
-        tiempos.push({
-          numero: d.numero,
-          operador: d.operador || 'Sin operador',
-          tiempoMinutos: Math.round(diffMinutos),
-          unidad: d.unidadOperativa || 'Sin unidad'
-        });
-      } catch (e) {
-        console.warn('Error al procesar tiempo:', e);
-      }
+    // 6. Servicios por hora del día basado en tc/TC - MODIFICADO PARA MOSTRAR LAS 24 HORAS
+    // Primero, filtrar datos que tengan la propiedad tc o TC
+    const datosConTC = datos.filter(d => d.tc !== undefined || d.TC !== undefined);
+    
+    // Extracción de horas - similar al código anterior pero guardamos en un Map para luego completar las 24h
+    const frecuenciaHoras = new Map();
+    
+    // Inicializar con todas las horas del día (0-23) con valor 0
+    for (let i = 0; i < 24; i++) {
+      const horaFormateada = `${i.toString().padStart(2, '0')}:00`;
+      frecuenciaHoras.set(horaFormateada, 0);
     }
     
-    // Group by time ranges
-    const rangos = [
-      { min: 0, max: 15, label: '0-15 min' },
-      { min: 15, max: 30, label: '15-30 min' },
-      { min: 30, max: 60, label: '30-60 min' },
-      { min: 60, max: 120, label: '1-2 horas' },
-      { min: 120, max: Infinity, label: '2+ horas' }
-    ];
+    // Procesar datos de TC y contar frecuencias
+    datosConTC.forEach(d => {
+      try {
+        // Obtener el valor de TC, usando tc en minúsculas si existe, o TC en mayúsculas como respaldo
+        const tcValor = d.tc !== undefined ? d.tc : d.TC;
+        
+        if (tcValor === undefined || tcValor === null) {
+          return; // Omitir registros sin valor de TC
+        }
+        
+        let hora = null;
+        
+        // CASO 1: Si TC es una fecha ya parseada
+        if (tcValor instanceof Date) {
+          hora = tcValor.getHours();
+        }
+        // CASO 2: Si TC es un string con formato fecha y hora (DD/MM/YYYY HH:MM:SS)
+        else if (typeof tcValor === 'string') {
+          // Patrón para fecha con formato DD/MM/YYYY HH:MM:SS o similares
+          const regexFechaHora = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\s+(\d{1,2})[:\.](\d{1,2})(?:[:\.](\d{1,2}))?/;
+          const matchFechaHora = tcValor.match(regexFechaHora);
+          
+          if (matchFechaHora) {
+            // Extraer la hora (grupo 4 de la regex)
+            hora = parseInt(matchFechaHora[4], 10);
+          } else {
+            // Si no coincide con el formato de fecha completo, intentar extraer solo la hora
+            const regexHora = /^(\d{1,2})[:\.](\d{1,2})(?:[:\.](\d{1,2}))?$/;
+            const matchHora = tcValor.match(regexHora);
+            
+            if (matchHora) {
+              hora = parseInt(matchHora[1], 10);
+            } else {
+              // Intentar convertir directamente a fecha si es un formato estándar
+              const fecha = new Date(tcValor);
+              if (!isNaN(fecha.getTime())) {
+                hora = fecha.getHours();
+              } else {
+                // Si es un número decimal (como "15.30") para representar hora
+                const numeroPosible = parseFloat(tcValor);
+                if (!isNaN(numeroPosible)) {
+                  hora = Math.floor(numeroPosible);
+                }
+              }
+            }
+          }
+        }
+        // CASO 3: Si TC es un número
+        else if (typeof tcValor === 'number') {
+          // Si es un timestamp Unix
+          if (tcValor > 1000000000) {  // Aproximadamente desde el año 2001
+            const fecha = new Date(tcValor);
+            if (!isNaN(fecha.getTime())) {
+              hora = fecha.getHours();
+            }
+          } else {
+            // Si es la hora en formato decimal (15.30)
+            hora = Math.floor(tcValor);
+          }
+        }
+        
+        // Si se extrajo una hora válida, incrementar su contador
+        if (hora !== null && hora >= 0 && hora <= 23) {
+          const horaFormateada = `${hora.toString().padStart(2, '0')}:00`;
+          frecuenciaHoras.set(horaFormateada, (frecuenciaHoras.get(horaFormateada) || 0) + 1);
+        }
+      } catch (e) {
+        console.warn('Error al procesar TC para hora:', e);
+      }
+    });
     
-    const tiemposPorRango = rangos.map(rango => {
-      const count = tiempos.filter(t => 
-        t.tiempoMinutos >= rango.min && t.tiempoMinutos < rango.max
-      ).length;
-      
-      return {
-        rango: rango.label,
-        cantidad: count
-      };
+    // Convertir el Map a un array para la gráfica
+    // Importante: mantener el orden cronológico de las horas (00:00 a 23:00)
+    const serviciosPorHora = Array.from(frecuenciaHoras.entries())
+      .map(([hora, cantidad]) => ({ hora, cantidad }))
+      .sort((a, b) => {
+        // Extraer solo la hora numérica para ordenar cronológicamente
+        const horaA = parseInt(a.hora.split(':')[0], 10);
+        const horaB = parseInt(b.hora.split(':')[0], 10);
+        return horaA - horaB;
+      });
+    
+    // Para depuración: mostrar algunos datos de TC procesados
+    console.log("Datos de servicios por hora:", {
+      totalRegistros: datos.length,
+      totalRegistrosConTC: datosConTC.length,
+      totalHorasAgrupadas: serviciosPorHora.length,
+      distribucionCompleta: serviciosPorHora
     });
     
     return {
@@ -115,7 +185,7 @@ export const generateChartData = (datos) => {
       serviciosPorUnidad,
       serviciosPorEstatus,
       serviciosPorCliente,
-      tiemposDeAtencion: tiemposPorRango
+      serviciosPorHora
     };
   } catch (error) {
     console.error('Error al generar datos para gráficas:', error);
@@ -125,7 +195,7 @@ export const generateChartData = (datos) => {
       serviciosPorUnidad: [],
       serviciosPorEstatus: [],
       serviciosPorCliente: [],
-      tiemposDeAtencion: []
+      serviciosPorHora: []
     };
   }
 };

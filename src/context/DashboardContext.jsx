@@ -51,7 +51,8 @@ export const DashboardProvider = ({ children }) => {
     serviciosPorOperador: [],
     serviciosPorUnidad: [],
     serviciosPorEstatus: [],
-    tiemposDeAtencion: []
+    serviciosPorCliente: [],
+    serviciosPorHora: []
   });
   
   // Actualizar opciones de filtro cuando cambian los datos
@@ -82,7 +83,8 @@ export const DashboardProvider = ({ children }) => {
         serviciosPorOperador: [],
         serviciosPorUnidad: [],
         serviciosPorEstatus: [],
-        tiemposDeAtencion: []
+        serviciosPorCliente: [],
+        serviciosPorHora: []
       });
     }
   }, [filteredData]);
@@ -119,6 +121,22 @@ export const DashboardProvider = ({ children }) => {
           const estatusValue = data.payload.estatus;
           const isEstatusSelected = filters.estatus.includes(estatusValue);
           handleCheckboxChange('estatus', estatusValue, !isEstatusSelected);
+          break;
+        case 'cliente':
+          const clienteValue = data.payload.cliente;
+          if (clienteValue && !filters.cliente) {
+            // Si no existe el filtro cliente, crearlo
+            setFilters(prev => ({
+              ...prev,
+              cliente: [clienteValue]
+            }));
+          } else {
+            const isClienteSelected = filters.cliente?.includes(clienteValue);
+            if (filters.cliente) {
+              // Si existe el filtro, actuar como un toggle
+              handleCheckboxChange('cliente', clienteValue, !isClienteSelected);
+            }
+          }
           break;
         default:
           break;

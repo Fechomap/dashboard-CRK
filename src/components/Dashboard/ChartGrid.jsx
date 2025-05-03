@@ -38,7 +38,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
         onClick={(data) => onChartClick('estatus', data)}
       />
       
-      {/* Services by Client - Nueva gráfica */}
+      {/* Services by Client */}
       <BarChartComponent 
         data={chartData.serviciosPorCliente}
         title="Servicios por Cliente"
@@ -48,13 +48,16 @@ const ChartGrid = ({ chartData, onChartClick }) => {
         onClick={(data) => onChartClick('cliente', data)}
       />
       
-      {/* Response Times */}
-      <BarChartComponent 
-        data={chartData.tiemposDeAtencion}
-        title="Tiempos de Atención"
-        nameKey="rango"
-        color="#ffc658"
-      />
+      {/* NUEVA GRÁFICA: 24-hour distribution */}
+      <div className="col-span-1 md:col-span-2">
+        <BarChartComponent 
+          data={chartData.serviciosPorHora}
+          title="Distribución de Contactos por Hora del Día"
+          nameKey="hora"
+          dataKey="cantidad"
+          color="#ffc658"
+        />
+      </div>
     </div>
   );
 };

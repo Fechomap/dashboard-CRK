@@ -22,7 +22,15 @@ import DataTable from './components/Dashboard/DataTable';
 
 const Dashboard = () => {
   // Use custom hooks for data and filters
-  const { data, loading, error, handleFileUpload } = useExcelData();
+  const { 
+    data, 
+    loading, 
+    error, 
+    fileName, 
+    handleFileUpload, 
+    clearData 
+  } = useExcelData();
+  
   const { 
     filters, 
     filteredData, 
@@ -193,6 +201,8 @@ const Dashboard = () => {
         onFileUpload={handleFileUpload}
         onResetFilters={resetFilters}
         onExportData={exportData}
+        onClearData={clearData}
+        fileName={fileName}
       />
       
       {/* Main content */}

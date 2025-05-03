@@ -6,11 +6,13 @@ import PieChartComponent from './ChartComponents/PieChartComponent';
 const ChartGrid = ({ chartData, onChartClick }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {/* Services by Month */}
-      <LineChartComponent 
-        data={chartData.serviciosPorMes}
-        title="Servicios por Mes"
-      />
+      {/* Services by Month - Ahora ocupa 2 columnas */}
+      <div className="col-span-1 md:col-span-2">
+        <LineChartComponent 
+          data={chartData.serviciosPorMes}
+          title="Servicios por Mes"
+        />
+      </div>
       
       {/* Services by Operator */}
       <BarChartComponent 
@@ -22,20 +24,20 @@ const ChartGrid = ({ chartData, onChartClick }) => {
         onClick={(data) => onChartClick('operador', data)}
       />
       
-      {/* Services by Operational Unit */}
-      <BarChartComponent 
-        data={chartData.serviciosPorUnidad}
-        title="Servicios por Unidad Operativa"
-        nameKey="unidad"
-        color="#82ca9d"
-      />
-      
       {/* Services by Status */}
       <PieChartComponent 
         data={chartData.serviciosPorEstatus}
         title="Servicios por Estatus"
         nameKey="estatus"
         onClick={(data) => onChartClick('estatus', data)}
+      />
+      
+      {/* Services by Operational Unit */}
+      <BarChartComponent 
+        data={chartData.serviciosPorUnidad}
+        title="Servicios por Unidad Operativa"
+        nameKey="unidad"
+        color="#82ca9d"
       />
       
       {/* Services by Client */}
@@ -48,7 +50,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
         onClick={(data) => onChartClick('cliente', data)}
       />
       
-      {/* NUEVA GRÁFICA: 24-hour distribution */}
+      {/* 24-hour distribution */}
       <div className="col-span-1 md:col-span-2">
         <BarChartComponent 
           data={chartData.serviciosPorHora}

@@ -11,9 +11,10 @@ const BarChartComponent = ({
   onClick = null,
   fullWidth = false
 }) => {
-  // Determinar si estamos mostrando la gráfica de 24 horas o la de unidades operativas
+  // Determinar si estamos mostrando la gráfica de 24 horas o la de unidades operativas o la de operadores
   const is24HourChart = title === "Distribución de Contactos por Hora del Día";
   const isUnitChart = title === "Servicios por Unidad Operativa";
+  const isOperatorChart = title === "Servicios por Operador (Top 10)";
   
   if (!data || data.length === 0) {
     return (
@@ -27,17 +28,20 @@ const BarChartComponent = ({
   }
   
   // Aumentar la altura para la gráfica de 24 horas o unidades operativas
-  const chartHeight = is24HourChart ? 400 : (isUnitChart && !vertical ? 400 : 240);
+  const chartHeight = is24HourChart ? 400 : ((isUnitChart || isOperatorChart) ? 400 : 240);
   
   return (
     <div className="bg-white p-4 rounded shadow">
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
-      <div className={`${is24HourChart || (isUnitChart && !vertical) ? 'h-96' : 'h-64'}`}>
+      <div className={`${is24HourChart || isUnitChart || (isOperatorChart && vertical) ? 'h-96' : 'h-64'}`}>
         <ResponsiveContainer width="100%" height="100%">
           {vertical ? (
             <BarChart
               data={data}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={isOperatorChart ? 
+                { top: 5, right: 30, left: 20, bottom: 5 } : 
+                { top: 5, right: 30, left: 20, bottom: 5 }
+              }
               layout="vertical"
             >
               <CartesianGrid strokeDasharray="3 3" />
@@ -45,10 +49,25 @@ const BarChartComponent = ({
               <YAxis 
                 dataKey={nameKey} 
                 type="category" 
-                width={150} 
-                tick={{ fontSize: 10 }}
-                // Ajuste especial para la gráfica de 24 horas
-                interval={is24HourChart ? 0 : 'preserveStartEnd'}
+                width={isOperatorChart ? 200 : 150} // Mayor ancho para nombres largos en operadores
+                tick={{ 
+                  fontSize: 10,
+                  width: isOperatorChart ? 180 : 140, // Permitir que el texto ocupe más espacio
+                  // Para operadores, se formatea para mostrar nombre y apellido en dos líneas
+                  formatter: isOperatorChart ? 
+                    (value) => {
+                      // Si el nombre contiene espacios, dividir en múltiples líneas
+                      if (value && value.includes(' ')) {
+                        const parts = value.split(' ');
+                        // Agregar saltos de línea entre palabras
+                        return parts.join('\n');
+                      }
+                      return value;
+                    } : 
+                    undefined
+                }}
+                // Ajuste para mostrar todas las etiquetas
+                interval={0}
               />
               <Tooltip />
               <Legend />

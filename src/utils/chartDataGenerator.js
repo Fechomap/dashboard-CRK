@@ -12,6 +12,7 @@ export const generateChartData = (datos) => {
       serviciosPorOperador: [],
       serviciosPorUnidad: [],
       serviciosPorEstatus: [],
+      serviciosPorCliente: [],
       tiemposDeAtencion: []
     };
   }
@@ -55,7 +56,14 @@ export const generateChartData = (datos) => {
       .sortBy([o => -o.cantidad])
       .value();
     
-    // 5. Response times
+    // 5. Services by client - NUEVA FUNCIONALIDAD
+    const serviciosPorCliente = _.chain(datos)
+      .groupBy(d => d.cliente || 'Sin cliente')
+      .map((value, key) => ({ cliente: key, cantidad: value.length }))
+      .sortBy([o => o.cantidad]) // Ordenados de menor a mayor según lo solicitado
+      .value();
+    
+    // 6. Response times
     const tiempos = [];
     for (const d of datos) {
       try {
@@ -106,6 +114,7 @@ export const generateChartData = (datos) => {
       serviciosPorOperador,
       serviciosPorUnidad,
       serviciosPorEstatus,
+      serviciosPorCliente,
       tiemposDeAtencion: tiemposPorRango
     };
   } catch (error) {
@@ -115,6 +124,7 @@ export const generateChartData = (datos) => {
       serviciosPorOperador: [],
       serviciosPorUnidad: [],
       serviciosPorEstatus: [],
+      serviciosPorCliente: [],
       tiemposDeAtencion: []
     };
   }

@@ -38,6 +38,16 @@ const ChartGrid = ({ chartData, onChartClick }) => {
         onClick={(data) => onChartClick('estatus', data)}
       />
       
+      {/* Services by Client - Nueva gráfica */}
+      <BarChartComponent 
+        data={chartData.serviciosPorCliente}
+        title="Servicios por Cliente"
+        nameKey="cliente"
+        color="#FF8042"
+        vertical={true}
+        onClick={(data) => onChartClick('cliente', data)}
+      />
+      
       {/* Response Times */}
       <BarChartComponent 
         data={chartData.tiemposDeAtencion}

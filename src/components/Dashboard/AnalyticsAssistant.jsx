@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useDashboard } from '../../context/DashboardContext';
 import Button from '../common/Button';
 import LoadingSpinner from '../common/LoadingSpinner';
+import OpenAIService from '../../services/OpenAIService';
+import OpenAIKeyConfig from './OpenAIKeyConfig';
 
 const AnalyticsAssistant = () => {
   const { 
@@ -17,6 +19,24 @@ const AnalyticsAssistant = () => {
   const [criticalAnalysis, setCriticalAnalysis] = useState(null);
   const [activeTab, setActiveTab] = useState('insights'); // 'insights' o 'critical'
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false);
+  const [showApiKeyConfig, setShowApiKeyConfig] = useState(false);
+  const [apiKeyConfigured, setApiKeyConfigured] = useState(false);
+  const [apiError, setApiError] = useState(null);
+  
+  // Verificar si la API key está configurada
+  useEffect(() => {
+    const checkApiKey = () => {
+      try {
+        const isConfigured = OpenAIService.isConfigured();
+        setApiKeyConfigured(isConfigured);
+      } catch (error) {
+        console.error("Error al verificar API key:", error);
+        setApiKeyConfigured(false);
+      }
+    };
+    
+    checkApiKey();
+  }, [showApiKeyConfig]);
   
   // Generar insights cuando cambian los datos o filtros
   useEffect(() => {
@@ -35,6 +55,7 @@ const AnalyticsAssistant = () => {
   const generateInsights = () => {
     setIsLoading(true);
     setCriticalAnalysis(null); // Resetear análisis crítico al actualizar
+    setApiError(null);
     
     // Simulamos un tiempo de procesamiento para el análisis
     setTimeout(() => {
@@ -44,92 +65,35 @@ const AnalyticsAssistant = () => {
     }, 1000);
   };
   
-  // Generar análisis crítico utilizando simulación de AI avanzada
-  const generateCriticalAnalysis = () => {
-    if (criticalAnalysis) return; // No regenerar si ya existe
+  // Generar análisis crítico exclusivamente utilizando ChatGPT a través de la API de OpenAI
+  const generateCriticalAnalysis = async () => {
+    if (!apiKeyConfigured) {
+      setShowApiKeyConfig(true);
+      return;
+    }
     
     setAiAnalysisLoading(true);
+    setApiError(null);
     
-    // Simular tiempo de procesamiento del modelo de IA
-    setTimeout(() => {
-      const analysis = getAICriticalAnalysis();
-      setCriticalAnalysis(analysis);
-      setAiAnalysisLoading(false);
-    }, 2000);
-  };
-  
-  // Simulación de análisis crítico generado por IA
-  const getAICriticalAnalysis = () => {
     try {
-      // Extraer información relevante para el análisis
-      const totalServicios = filteredData.length;
-      let serviciosConcluidos = 0;
-      let serviciosCancelados = 0;
-      let serviciosPendientes = 0;
-      
-      // Contar por estatus
-      filteredData.forEach(item => {
-        const estatus = (item.estatus || '').toLowerCase();
-        if (estatus.includes('conclu')) serviciosConcluidos++;
-        else if (estatus.includes('cancel')) serviciosCancelados++;
-        else serviciosPendientes++;
-      });
-      
-      const tasaConclusionPct = (serviciosConcluidos / totalServicios) * 100;
-      const tasaCancelacionPct = (serviciosCancelados / totalServicios) * 100;
-      
-      // Analizar operadores
-      const operadoresAnalisis = chartData.serviciosPorOperador || [];
-      const desbalanceoOperadores = operadoresAnalisis.length > 1 ? 
-        (operadoresAnalisis[0].cantidad / operadoresAnalisis[operadoresAnalisis.length - 1].cantidad) : 1;
-      
-      // Analizar distribución horaria
-      const horasVacias = (chartData.serviciosPorHora || [])
-        .filter(h => h.cantidad === 0 || h.cantidad === 1)
-        .map(h => h.hora);
-      
-      // Generar análisis crítico combinando todos los factores
-      return {
-        executive_summary: {
-          title: "Resumen Ejecutivo",
-          content: `El análisis revela varios puntos críticos que requieren atención inmediata. Con una tasa de conclusión del ${tasaConclusionPct.toFixed(1)}% y un ${tasaCancelacionPct.toFixed(1)}% de servicios cancelados, existe un margen significativo para optimizar la eficiencia operativa. La distribución de carga entre operadores muestra un desbalanceo de ${desbalanceoOperadores.toFixed(1)}x entre el más y menos ocupado, lo que indica una gestión sub-óptima de recursos humanos. La cobertura horaria presenta importantes brechas en ${horasVacias.length} franjas horarias, comprometiendo la capacidad de respuesta en ciertos momentos del día.`
-        },
-        sections: [
-          {
-            title: "Deficiencias en la Tasa de Conclusión",
-            content: `La tasa de conclusión actual (${tasaConclusionPct.toFixed(1)}%) está por debajo del estándar de excelencia operativa del 95% que deberían mantener operaciones de este tipo. Cada servicio no concluido representa una oportunidad perdida y potencialmente un cliente insatisfecho. El análisis sugiere que esta deficiencia podría deberse a:\n\n1. Falta de seguimiento adecuado de servicios pendientes.\n2. Ausencia de un protocolo efectivo de escalamiento para servicios complejos.\n3. Posible sobrecarga de ciertos operadores que no logran finalizar todos sus servicios asignados.\n\nEstos indicadores apuntan a un problema sistémico en la gestión de cierre de servicios que requiere intervención inmediata.`
-          },
-          {
-            title: "Desbalanceo Crítico de Cargas de Trabajo",
-            content: `El ratio de ${desbalanceoOperadores.toFixed(1)}x entre el operador más ocupado y el menos ocupado indica una distribución profundamente inequitativa de la carga de trabajo. Este desbalanceo genera varios problemas operativos críticos:\n\n1. Riesgo de burnout y error humano en operadores sobrecargados.\n2. Subutilización costosa de personal con menor carga.\n3. Inconsistencia en los tiempos de respuesta y calidad de servicio.\n\nExiste evidencia clara de que no se están aplicando algoritmos efectivos de distribución de carga. La organización debe considerar esta situación como de alta prioridad ya que compromete tanto la eficiencia económica como la calidad del servicio.`
-          },
-          {
-            title: "Cobertura Horaria Deficiente",
-            content: `Se han identificado ${horasVacias.length} franjas horarias con actividad mínima o nula (${horasVacias.slice(0, 3).join(', ')}${horasVacias.length > 3 ? '...' : ''}). Esta situación presenta dos posibles interpretaciones problemáticas:\n\n1. Falta de personal durante estas horas, creando "puntos ciegos" en la operación.\n2. Demanda naturalmente baja que podría permitir reasignar recursos a otros horarios más demandados.\n\nEn cualquier caso, la gestión actual de turnos no está optimizada para la demanda real. Recomendamos una revisión completa del esquema de turnos basada en datos históricos de al menos los últimos 3 meses para identificar patrones consistentes.`
-          },
-          {
-            title: "Oportunidades de Mejora Urgentes",
-            content: `Para corregir las deficiencias identificadas, se requieren las siguientes acciones inmediatas:\n\n1. Implementar un sistema de alerta temprana para servicios en riesgo de no conclusión.\n2. Desarrollar un algoritmo de asignación que equilibre cargas de trabajo diariamente.\n3. Rediseñar la estructura de turnos para maximizar la cobertura en horas pico y optimizar recursos en horas valle.\n4. Establecer KPIs individuales de tasa de conclusión para operadores con seguimiento semanal.\n5. Crear un equipo de respuesta rápida para intervenir en momentos de acumulación de servicios pendientes.\n\nEstas medidas deberían implementarse en un plazo no mayor a 30 días para ver mejoras significativas en el próximo ciclo de evaluación.`
-          }
-        ],
-        conclusion: {
-          title: "Conclusión",
-          content: `El análisis crítico revela un sistema operativo que funciona por debajo de su potencial óptimo. Si bien existen ciertos aspectos positivos, las deficiencias identificadas representan una oportunidad significativa de mejora en eficiencia, calidad de servicio y utilización de recursos. Con la implementación de las acciones recomendadas, estimamos que la organización podría lograr una mejora del 15-20% en productividad general y un incremento del 10% en la tasa de conclusión en el corto plazo. La clave del éxito será mantener un enfoque basado en datos para la toma de decisiones operativas y establecer ciclos continuos de evaluación y mejora.`
-        }
+      // Preparar los datos para enviar a la API
+      const dashboardData = {
+        filteredData,
+        chartData,
+        filters,
+        fileName
       };
+      
+      // Llamar al servicio de OpenAI
+      const response = await OpenAIService.generateCriticalAnalysis(dashboardData);
+      
+      // Actualizar el estado con la respuesta
+      setCriticalAnalysis(response);
     } catch (error) {
-      console.error("Error al generar análisis crítico:", error);
-      return {
-        executive_summary: {
-          title: "Error en Análisis",
-          content: "No se pudo generar el análisis crítico debido a un error en el procesamiento de datos."
-        },
-        sections: [],
-        conclusion: {
-          title: "Recomendación",
-          content: "Por favor, intente nuevamente con un conjunto de datos más completo o contacte al equipo de soporte."
-        }
-      };
+      console.error("Error al generar análisis con ChatGPT:", error);
+      setApiError(error.message || "Error de conexión con la API de OpenAI");
+    } finally {
+      setAiAnalysisLoading(false);
     }
   };
   
@@ -380,8 +344,26 @@ const AnalyticsAssistant = () => {
     );
   }
   
+  // Render del asistente en modal
   return (
     <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center z-50">
+      {/* Modal de configuración de API key */}
+      {showApiKeyConfig && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black bg-opacity-40">
+          <OpenAIKeyConfig
+            onClose={() => setShowApiKeyConfig(false)}
+            onSuccess={() => {
+              setShowApiKeyConfig(false);
+              setApiKeyConfigured(true);
+              if (activeTab === 'critical') {
+                generateCriticalAnalysis();
+              }
+            }}
+          />
+        </div>
+      )}
+      
+      {/* Contenido principal del asistente */}
       <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-5xl h-5/6 flex flex-col">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-xl font-semibold">Asistente Analítico</h2>
@@ -415,13 +397,18 @@ const AnalyticsAssistant = () => {
                   generateCriticalAnalysis();
                 }
               }}
-              className={`py-3 px-6 font-medium ${
+              className={`py-3 px-6 font-medium flex items-center ${
                 activeTab === 'critical' 
                   ? 'text-blue-600 border-b-2 border-blue-600' 
                   : 'text-gray-600 hover:text-gray-800'
               }`}
             >
-              Análisis Crítico (IA)
+              Análisis Crítico (ChatGPT)
+              {!apiKeyConfigured && (
+                <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Requiere API
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -457,9 +444,87 @@ const AnalyticsAssistant = () => {
             </>
           ) : (
             // Pestaña de Análisis Crítico
-            aiAnalysisLoading ? (
+            apiError ? (
+              <div className="py-8 text-center">
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Error al conectar con OpenAI API</h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>{apiError}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {criticalAnalysis ? (
+                  <p className="text-gray-600 mb-4">Se muestra el análisis simulado como alternativa.</p>
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <p className="text-gray-600 mb-4">Puede usar el modo simulado o configurar una API key de OpenAI para continuar.</p>
+                    <div className="flex space-x-4">
+                      <Button 
+                        variant="secondary"
+                        onClick={() => {
+                          setCriticalAnalysis(getSimulatedAnalysis());
+                          setApiError(null);
+                        }}
+                      >
+                        Usar Modo Simulado
+                      </Button>
+                      <Button 
+                        variant="primary"
+                        onClick={() => setShowApiKeyConfig(true)}
+                      >
+                        Configurar API Key
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                {criticalAnalysis && (
+                  <div className="mt-6 space-y-8">
+                    {/* Si hay error pero tenemos análisis simulado, lo mostramos */}
+                    <div className="space-y-8">
+                      {/* Resumen ejecutivo */}
+                      <div className="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-600">
+                        <h3 className="font-bold text-lg text-blue-800 mb-3">{criticalAnalysis.executive_summary.title}</h3>
+                        <p className="text-gray-800 leading-relaxed">
+                          {criticalAnalysis.executive_summary.content}
+                        </p>
+                      </div>
+                      
+                      {/* Secciones de análisis crítico */}
+                      <div className="space-y-6">
+                        {criticalAnalysis.sections.map((section, index) => (
+                          <div key={index} className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                            <h3 className="font-bold text-red-700 mb-3">{section.title}</h3>
+                            <p className="text-gray-700 whitespace-pre-line leading-relaxed">
+                              {section.content}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Conclusión */}
+                      <div className="bg-gray-50 p-6 rounded-lg border-l-4 border-gray-600">
+                        <h3 className="font-bold text-lg text-gray-800 mb-3">{criticalAnalysis.conclusion.title}</h3>
+                        <p className="text-gray-700 leading-relaxed">
+                          {criticalAnalysis.conclusion.content}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : aiAnalysisLoading ? (
               <div className="py-12">
-                <LoadingSpinner message="Generando análisis crítico avanzado mediante IA..." />
+                <LoadingSpinner message="Generando análisis crítico avanzado mediante ChatGPT..." />
                 <p className="text-center text-gray-500 mt-4">Este proceso puede tomar unos momentos mientras nuestro sistema analiza en profundidad sus datos operativos.</p>
               </div>
             ) : criticalAnalysis ? (
@@ -468,10 +533,10 @@ const AnalyticsAssistant = () => {
                 <div className="flex justify-between items-center py-2 px-4 bg-gray-100 rounded-lg">
                   <div>
                     <h3 className="text-lg font-bold text-gray-800">Análisis Crítico de Operaciones</h3>
-                    <p className="text-sm text-gray-600">Generado mediante análisis avanzado de datos operativos</p>
+                    <p className="text-sm text-gray-600">Generado por ChatGPT - Análisis avanzado por IA</p>
                   </div>
                   <div className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-                    Confidencial
+                    Análisis Ejecutivo
                   </div>
                 </div>
                 
@@ -511,13 +576,31 @@ const AnalyticsAssistant = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">Error al generar el análisis crítico.</p>
+                <div className="mb-8">
+                  <svg className="w-16 h-16 text-blue-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  <h3 className="text-xl font-semibold mb-2">Análisis Profesional con ChatGPT</h3>
+                </div>
+                <p className="text-gray-600 mb-6 max-w-lg mx-auto">
+                  Para generar un análisis crítico ejecutivo avanzado de tus datos utilizando ChatGPT, necesitas configurar una API key de OpenAI. Esta integración permite un análisis profundo, detallado y siempre variado de tu información.
+                </p>
+                <div className="bg-blue-50 p-4 mb-6 rounded-lg max-w-lg mx-auto text-left">
+                  <h4 className="text-blue-800 font-medium mb-2">Beneficios del análisis con ChatGPT:</h4>
+                  <ul className="text-gray-700 text-sm space-y-1">
+                    <li>• Análisis crítico profesional y ejecutivo</li>
+                    <li>• Identificación de tendencias y problemas ocultos</li>
+                    <li>• Recomendaciones accionables y específicas</li>
+                    <li>• Visión estratégica y dirección futura</li>
+                    <li>• Perspectiva única en cada análisis generado</li>
+                  </ul>
+                </div>
                 <Button 
                   variant="primary"
-                  onClick={generateCriticalAnalysis}
-                  className="mt-4"
+                  onClick={() => setShowApiKeyConfig(true)}
+                  className="px-6"
                 >
-                  Reintentar Análisis
+                  Configurar API Key de OpenAI
                 </Button>
               </div>
             )
@@ -532,12 +615,18 @@ const AnalyticsAssistant = () => {
             Cerrar
           </Button>
           <div className="space-x-3">
-            {activeTab === 'critical' && !aiAnalysisLoading && criticalAnalysis && (
+            {activeTab === 'critical' && !aiAnalysisLoading && (
               <Button 
                 variant="secondary"
-                onClick={generateCriticalAnalysis}
+                onClick={() => {
+                  if (apiKeyConfigured) {
+                    generateCriticalAnalysis();
+                  } else {
+                    setShowApiKeyConfig(true);
+                  }
+                }}
               >
-                Regenerar Análisis
+                {apiKeyConfigured ? "Regenerar Análisis" : "Configurar API"}
               </Button>
             )}
             <Button 

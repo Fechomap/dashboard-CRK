@@ -8,41 +8,48 @@
  * @returns {Array} - Datos filtrados
  */
 export const applyDateFilter = (data, fechaInicio, fechaFin) => {
-    let result = [...data];
-    
-    if (fechaInicio) {
-      try {
-        // Parsear la fecha de inicio y establecer a medianoche
-        const fechaInicioObj = new Date(fechaInicio);
-        fechaInicioObj.setHours(0, 0, 0, 0);
+  let result = [...data];
+  
+  if (fechaInicio) {
+    try {
+      // CORRECCIÓN CRÍTICA: Asegurarse de usar solo la parte de la fecha (sin zona horaria)
+      // Extraer componentes de fecha del string YYYY-MM-DD
+      const [year, month, day] = fechaInicio.split('-').map(Number);
+      
+      // CORRECCIÓN: Crear fecha a medianoche EXACTA en hora local
+      const fechaInicioObj = new Date(year, month - 1, day, 0, 0, 0, 0);
+      
+      // Log para depuración
+      console.log(`FILTRO - Fecha inicio exacta: ${fechaInicioObj.toLocaleString('es-MX')}`);
+      
+      result = result.filter(item => {
+        // Verificar que la fecha existe
+        if (!item.fechaRegistro) {
+          return false;
+        }
         
-        result = result.filter(item => {
-          // Verificar que la fecha existe
-          if (!item.fechaRegistro) {
-            return false;
-          }
-          
-          // Crear una nueva fecha a partir del valor
-          let fechaItem;
-          if (item.fechaRegistro instanceof Date) {
-            fechaItem = new Date(item.fechaRegistro.getTime()); // clonar para no modificar original
-          } else {
-            // Intentar convertir string a Date
-            fechaItem = new Date(item.fechaRegistro);
-            if (isNaN(fechaItem.getTime())) {
-              return false;
-            }
-          }
-          
-          // Comparar solo la fecha (ignorar la hora)
-          fechaItem.setHours(0, 0, 0, 0);
-          
-          return fechaItem >= fechaInicioObj;
-        });
-      } catch (e) {
-        console.error('Error al filtrar por fecha inicio:', e);
-      }
+        // CORRECCIÓN: Extraer solo la parte de fecha (ignorar hora/zona horaria)
+        const fechaItem = item.fechaRegistro;
+        const yearItem = fechaItem.getFullYear();
+        const monthItem = fechaItem.getMonth();
+        const dayItem = fechaItem.getDate();
+        
+        // CORRECCIÓN: Comparar usando año-mes-día en vez de objetos Date completos
+        // Crear valores numéricos para comparación sin ambigüedades
+        const valorInicio = year * 10000 + (month - 1) * 100 + day;
+        const valorItem = yearItem * 10000 + monthItem * 100 + dayItem;
+        
+        const incluir = valorItem >= valorInicio;
+        if (!incluir && item.fechaRegistro) {
+          console.log(`EXCLUIDO: Fecha ${item.fechaRegistro.toLocaleDateString('es-MX')} anterior a ${fechaInicioObj.toLocaleDateString('es-MX')}`);
+        }
+        
+        return incluir;
+      });
+    } catch (e) {
+      console.error('Error al filtrar por fecha inicio:', e);
     }
+  }
     
     if (fechaFin) {
       try {

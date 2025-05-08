@@ -1,3 +1,5 @@
+// src/utils/chartDataGenerator.js - Versión corregida
+
 import _ from 'lodash';
 
 /**
@@ -14,7 +16,8 @@ export const generateChartData = (datos, filters = {}) => {
       serviciosPorUnidad: [],
       serviciosPorEstatus: [],
       serviciosPorCliente: [],
-      serviciosPorHora: []
+      serviciosPorHora: [],
+      tituloGraficaTiempo: "Servicios por Mes"
     };
   }
 
@@ -43,7 +46,9 @@ export const generateChartData = (datos, filters = {}) => {
       .groupBy(d => {
         if (!d.fechaRegistro) return 'Sin fecha';
         try {
-          const date = new Date(d.fechaRegistro);
+          const date = d.fechaRegistro instanceof Date ? 
+            d.fechaRegistro : new Date(d.fechaRegistro);
+          
           if (isNaN(date.getTime())) return 'Sin fecha';
           
           if (agruparPorDia) {
@@ -65,6 +70,54 @@ export const generateChartData = (datos, filters = {}) => {
       }))
       .sortBy(['periodo'])
       .value();
+    
+    // Si el agrupamiento es por día, asegurarnos de que se muestren TODOS los días del rango
+    let serviciosPorPeriodoCompleto = [...serviciosPorPeriodo];
+    
+    if (agruparPorDia && filters.fechaInicio && filters.fechaFin) {
+      try {
+        const fechaInicio = new Date(filters.fechaInicio);
+        const fechaFin = new Date(filters.fechaFin);
+        
+        // Asegurarse que las fechas son válidas
+        if (!isNaN(fechaInicio.getTime()) && !isNaN(fechaFin.getTime())) {
+          const fechaActual = new Date(fechaInicio);
+          const periodosCompletos = [];
+          
+          // Crear un mapa de los períodos existentes para acceso rápido
+          const periodosMap = {};
+          serviciosPorPeriodo.forEach(p => {
+            if (p.periodo !== 'Sin fecha') {
+              periodosMap[p.periodo] = p;
+            }
+          });
+          
+          // Generar todos los días en el rango
+          while (fechaActual <= fechaFin) {
+            const periodoKey = `${fechaActual.getFullYear()}-${(fechaActual.getMonth() + 1).toString().padStart(2, '0')}-${fechaActual.getDate().toString().padStart(2, '0')}`;
+            
+            // Si el período ya existe, usarlo; si no, crear uno con cantidad 0
+            if (periodosMap[periodoKey]) {
+              periodosCompletos.push(periodosMap[periodoKey]);
+            } else {
+              periodosCompletos.push({
+                periodo: periodoKey,
+                cantidad: 0,
+                tipo: 'dia'
+              });
+            }
+            
+            // Avanzar al siguiente día
+            fechaActual.setDate(fechaActual.getDate() + 1);
+          }
+          
+          // Ordenar por período
+          serviciosPorPeriodoCompleto = _.sortBy(periodosCompletos, ['periodo']);
+        }
+      } catch (e) {
+        console.error("Error al completar días:", e);
+      }
+    }
     
     // 2. Services by operator
     const serviciosPorOperador = _.chain(datos)
@@ -92,7 +145,7 @@ export const generateChartData = (datos, filters = {}) => {
     const serviciosPorCliente = _.chain(datos)
       .groupBy(d => d.cliente || 'Sin cliente')
       .map((value, key) => ({ cliente: key, cantidad: value.length }))
-      .sortBy([o => o.cantidad])
+      .sortBy([o => -o.cantidad])
       .value();
     
     // 6. Services by hour of day (TC)
@@ -178,18 +231,19 @@ export const generateChartData = (datos, filters = {}) => {
     // Para depuración
     console.log("Generación de datos completada:", {
       agrupamiento: agruparPorDia ? 'por día' : 'por mes',
-      totalPeriodos: serviciosPorPeriodo.length,
-      muestraPeriodos: serviciosPorPeriodo.slice(0, 3)
+      totalPeriodos: serviciosPorPeriodoCompleto.length,
+      operadores: serviciosPorOperador.length,
+      unidades: serviciosPorUnidad.length,
+      estatus: serviciosPorEstatus.length
     });
     
     return {
-      serviciosPorPeriodo,
+      serviciosPorPeriodo: serviciosPorPeriodoCompleto,
       serviciosPorOperador,
       serviciosPorUnidad,
       serviciosPorEstatus,
       serviciosPorCliente,
       serviciosPorHora,
-      // Agregar información para el título de la gráfica
       tituloGraficaTiempo
     };
   } catch (error) {
@@ -205,3 +259,4 @@ export const generateChartData = (datos, filters = {}) => {
     };
   }
 };
+

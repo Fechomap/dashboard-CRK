@@ -1,3 +1,4 @@
+// src/components/Dashboard/DataTable.jsx - Versión con ancho completo
 import React, { useState } from 'react';
 import { formatDate } from '../../utils/dataFormatters';
 
@@ -26,7 +27,7 @@ const DataTable = ({ data }) => {
   
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white p-4 rounded shadow mb-6">
+      <div className="bg-white p-4 rounded shadow mb-6 w-full">
         <h3 className="text-lg font-semibold mb-4">Tabla de Servicios</h3>
         <p className="text-gray-500 text-center py-4">No hay datos disponibles</p>
       </div>
@@ -34,9 +35,9 @@ const DataTable = ({ data }) => {
   }
   
   return (
-    <div className="bg-white p-4 rounded shadow mb-6">
+    <div className="bg-white p-4 rounded shadow mb-6 w-full">
       <h3 className="text-lg font-semibold mb-4">Tabla de Servicios</h3>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto w-full">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -73,7 +74,7 @@ const DataTable = ({ data }) => {
         </table>
         
         {/* Paginación */}
-        <div className="mt-4 flex justify-between items-center">
+        <div className="mt-4 flex justify-between items-center w-full">
           <p className="text-sm text-gray-700">
             Mostrando <span className="font-medium">{Math.min(data.length, (currentPage * itemsPerPage) + 1)}-{Math.min(data.length, (currentPage + 1) * itemsPerPage)}</span> de <span className="font-medium">{data.length}</span> resultados
           </p>

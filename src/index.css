@@ -1,3 +1,28 @@
+/* src/index.css - Actualización para garantizar el ancho completo */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Asegurarse de que el html y body ocupen toda la pantalla */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Estilos específicos para componentes ReactJS */
+.recharts-responsive-container {
+  width: 100% !important;
+}
+
+/* Asegurarse de que los contenedores de gráficos ocupen todo el ancho disponible */
+.recharts-wrapper {
+  width: 100% !important;
+}
+
+/* Evitar scroll horizontal no deseado */
+.overflow-x-auto {
+  max-width: 100%;
+}

@@ -1,4 +1,4 @@
-// src/Dashboard.jsx
+// src/Dashboard.jsx - Versión corregida con ancho completo
 import React, { useRef, useEffect } from 'react';
 
 // Common Components
@@ -53,7 +53,7 @@ const Dashboard = () => {
   // Mostrar estado de carga
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen w-full">
         <LoadingSpinner message="Cargando, por favor espere..." />
       </div>
     );
@@ -62,7 +62,7 @@ const Dashboard = () => {
   // Mostrar estado de error
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-screen w-full">
         <ErrorMessage 
           message={error} 
           onRetry={() => window.location.reload()} 
@@ -72,7 +72,7 @@ const Dashboard = () => {
   }
   
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 w-full">
       {/* Header */}
       <DashboardHeader 
         onFileUpload={handleFileUpload}
@@ -84,7 +84,7 @@ const Dashboard = () => {
       />
       
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+      <main className="w-full px-4 py-6 sm:px-6 lg:px-8">
         {data.length === 0 ? (
           <EmptyState onFileUpload={handleFileUpload} />
         ) : (
@@ -100,12 +100,12 @@ const Dashboard = () => {
             />
             
             {/* Stats Overview */}
-            <div ref={statsContainerRef} id="stats-overview">
+            <div ref={statsContainerRef} id="stats-overview" className="w-full">
               <StatsOverview filteredData={filteredData} />
             </div>
             
             {/* Charts Grid */}
-            <div id="charts-container">
+            <div id="charts-container" className="w-full">
               <ChartGrid 
                 chartData={chartData}
                 onChartClick={handleChartClick}
@@ -122,8 +122,8 @@ const Dashboard = () => {
       </main>
       
       {/* Footer */}
-      <footer className="bg-white shadow-inner py-4">
-        <div className="max-w-7xl mx-auto px-4 text-center text-gray-500 text-sm">
+      <footer className="bg-white shadow-inner py-4 w-full">
+        <div className="w-full px-4 text-center text-gray-500 text-sm">
           Dashboard de Análisis de Servicios - v1.0.0
         </div>
       </footer>

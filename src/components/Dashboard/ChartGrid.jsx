@@ -1,3 +1,4 @@
+// src/components/Dashboard/ChartGrid.jsx - Versión con ancho completo
 import React, { useEffect, useRef } from 'react';
 import LineChartComponent from './ChartComponents/LineChartComponent';
 import BarChartComponent from './ChartComponents/BarChartComponent';
@@ -33,9 +34,9 @@ const ChartGrid = ({ chartData, onChartClick }) => {
   }, [chartRefs]);
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 w-full">
       {/* Services by Period (Day or Month) - Ocupa 2 columnas */}
-      <div className="col-span-1 md:col-span-2" ref={lineChartRef}>
+      <div className="col-span-1 md:col-span-2 w-full" ref={lineChartRef}>
         <LineChartComponent 
           data={chartData.serviciosPorPeriodo}
           title={tituloGraficaTiempo}
@@ -44,7 +45,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
       </div>
       
       {/* Services by Operator */}
-      <div ref={operatorChartRef}>
+      <div ref={operatorChartRef} className="w-full">
         <BarChartComponent 
           data={chartData.serviciosPorOperador}
           title="Servicios por Operador (Top 10)"
@@ -56,7 +57,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
       </div>
       
       {/* Services by Status */}
-      <div ref={statusChartRef}>
+      <div ref={statusChartRef} className="w-full">
         <PieChartComponent 
           data={chartData.serviciosPorEstatus}
           title="Servicios por Estatus"
@@ -66,7 +67,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
       </div>
       
       {/* Services by Operational Unit */}
-      <div ref={unitChartRef}>
+      <div ref={unitChartRef} className="w-full">
         <BarChartComponent 
           data={chartData.serviciosPorUnidad}
           title="Servicios por Unidad Operativa"
@@ -76,7 +77,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
       </div>
       
       {/* Services by Client */}
-      <div ref={clientChartRef}>
+      <div ref={clientChartRef} className="w-full">
         <BarChartComponent 
           data={chartData.serviciosPorCliente}
           title="Servicios por Cliente"
@@ -88,7 +89,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
       </div>
       
       {/* 24-hour distribution */}
-      <div className="col-span-1 md:col-span-2" ref={hourChartRef}>
+      <div className="col-span-1 md:col-span-2 w-full" ref={hourChartRef}>
         <BarChartComponent 
           data={chartData.serviciosPorHora}
           title="Distribución de Contactos por Hora del Día"

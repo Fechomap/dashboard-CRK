@@ -1,3 +1,4 @@
+// src/components/Dashboard/DashboardHeader.jsx - Versión con ancho completo
 import React from 'react';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -10,9 +11,9 @@ const DashboardHeader = ({
   exportLoading
 }) => {
   return (
-    <header className="bg-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row justify-between items-center">
+    <header className="bg-white shadow-md w-full">
+      <div className="w-full px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full">
           <div className="flex-1 mb-4 sm:mb-0">
             <h1 className="text-2xl font-bold text-gray-900">Dashboard de Análisis de Servicios</h1>
             {fileName && (
@@ -21,7 +22,7 @@ const DashboardHeader = ({
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
             <div>
               <label 
                 htmlFor="file-upload" 

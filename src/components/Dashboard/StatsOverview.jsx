@@ -1,3 +1,4 @@
+// src/components/Dashboard/StatsOverview.jsx - Versión con ancho completo
 import React from 'react';
 import StatsCard from './StatsCard';
 
@@ -36,7 +37,7 @@ const StatsOverview = ({ filteredData }) => {
   ).size;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 w-full">
       <StatsCard 
         title="Total de Servicios" 
         value={totalServices}

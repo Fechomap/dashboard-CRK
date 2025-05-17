@@ -1,3 +1,4 @@
+// src/components/Dashboard/FilterPanel.jsx - Versión con ancho completo
 import React from 'react';
 import CheckboxFilter from './FilterComponents/CheckboxFilter';
 import DateFilter from './FilterComponents/DateFilter';
@@ -16,9 +17,9 @@ const FilterPanel = ({
   const estatus = filterOptions?.estatus || [];
   
   return (
-    <div className="bg-white p-6 rounded shadow mb-6">
+    <div className="bg-white p-6 rounded shadow mb-6 w-full">
       <h2 className="text-lg font-semibold mb-4">Filtros</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         <div>
           {/* Date Filter */}
           <DateFilter 

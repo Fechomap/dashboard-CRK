@@ -64,23 +64,53 @@ const LineChartComponent = ({ data, title, nameKey = "periodo" }) => {
             />
             <YAxis />
             <Tooltip 
-              formatter={(value) => [`${value} servicios`, 'Cantidad']}
+              formatter={(value, name) => {
+                if (name === 'cantidad') {
+                  return [`${value} servicios`, 'Cantidad'];
+                } else if (name === 'costoTotal') {
+                  // Eliminar decimales y mantener el símbolo $
+                  return [`$${Math.round(value).toLocaleString('es-MX')}`, 'Costo Total'];
+                }
+                return [value, name];
+              }}
               labelFormatter={(label) => `${esDia ? 'Día' : 'Mes'}: ${formatearEtiqueta(label)}`}
             />
             <Legend />
             <Line 
               type="monotone" 
               dataKey="cantidad" 
+              name="Cantidad de Servicios"
               stroke="#8884d8" 
-              strokeWidth={2} // Línea más gruesa
-              activeDot={{ r: 8, stroke: '#8884d8', strokeWidth: 2, fill: '#fff' }} // Punto activo más visible
+              strokeWidth={2}
+              activeDot={{ r: 8, stroke: '#8884d8', strokeWidth: 2, fill: '#fff' }}
               dot={{ 
-                // Siempre mostrar puntos en la gráfica de días, independiente de la cantidad 
                 r: 4, 
                 strokeWidth: 2,
                 stroke: '#8884d8',
                 fill: '#fff'
               }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="costoTotal" 
+              name="Costo Total"
+              stroke="#82ca9d" 
+              strokeWidth={2}
+              activeDot={{ r: 8, stroke: '#82ca9d', strokeWidth: 2, fill: '#fff' }}
+              dot={false}
+              yAxisId="right"
+            />
+            <YAxis 
+              yAxisId="right" 
+              orientation="right" 
+              tickFormatter={(value) => {
+                return new Intl.NumberFormat('es-MX', {
+                  style: 'currency',
+                  currency: 'MXN',
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
+                }).format(value);
+              }} 
             />
           </LineChart>
         </ResponsiveContainer>

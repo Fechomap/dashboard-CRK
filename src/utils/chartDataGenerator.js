@@ -62,12 +62,31 @@ export const generateChartData = (datos, filters = {}) => {
           return 'Sin fecha';
         }
       })
-      .map((value, key) => ({ 
-        periodo: key, 
-        cantidad: value.length,
-        // Añadir una propiedad que indique si es día o mes para la visualización
-        tipo: agruparPorDia ? 'dia' : 'mes' 
-      }))
+      .map((value, key) => { 
+        // Calcular el costo total para este período
+        const costoTotal = value.reduce((sum, item) => {
+          let costo = 0;
+          if (item.costoTotal !== undefined && item.costoTotal !== null) {
+            if (typeof item.costoTotal === 'string') {
+              costo = parseFloat(item.costoTotal.replace(/[^\d.-]/g, '')) || 0;
+            } else {
+              costo = Number(item.costoTotal) || 0;
+            }
+          }
+          return sum + (isNaN(costo) ? 0 : costo);
+        }, 0);
+        
+        // Redondear a 2 decimales
+        const costoRedondeado = Math.round(costoTotal * 100) / 100;
+        
+        return { 
+          periodo: key, 
+          cantidad: value.length,
+          costoTotal: costoRedondeado,
+          // Añadir una propiedad que indique si es día o mes para la visualización
+          tipo: agruparPorDia ? 'dia' : 'mes' 
+        };
+      })
       .sortBy(['periodo'])
       .value();
     
@@ -103,6 +122,7 @@ export const generateChartData = (datos, filters = {}) => {
               periodosCompletos.push({
                 periodo: periodoKey,
                 cantidad: 0,
+                costoTotal: 0,
                 tipo: 'dia'
               });
             }
@@ -259,4 +279,3 @@ export const generateChartData = (datos, filters = {}) => {
     };
   }
 };
-

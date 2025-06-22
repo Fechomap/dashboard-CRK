@@ -1,5 +1,5 @@
 // src/components/Dashboard/StatsOverview.jsx - Versión con ancho completo
-import React from 'react';
+import React, { useMemo } from 'react';
 import StatsCard from './StatsCard';
 
 const StatsOverview = ({ filteredData }) => {
@@ -9,79 +9,85 @@ const StatsOverview = ({ filteredData }) => {
     return null;
   }
   
-  // Calculate statistics from the filtered data
-  const totalServices = filteredData.length;
+  // Los cálculos ahora están memoizados en el hook useMemo abajo
   
-  const completedServices = filteredData.filter(
-    item => item && item.estatus === 'Concluido'
-  ).length;
-  
-  // Calcular suma total de costos con validaciones mejoradas
-  const totalCostSum = filteredData.length > 0 
-    ? filteredData.reduce((acc, item) => {
-        // Validar que item existe
-        if (!item) return acc;
-        
-        // Asegurar que costoTotal es un número válido
-        let costo = 0;
-        if (item.costoTotal !== undefined && item.costoTotal !== null) {
-          // Si es string, intentar convertir a número
-          if (typeof item.costoTotal === 'string') {
-            const parsed = parseFloat(item.costoTotal.replace(/[^\d.-]/g, ''));
-            costo = isNaN(parsed) ? 0 : parsed;
-          } else if (typeof item.costoTotal === 'number') {
-            costo = isNaN(item.costoTotal) ? 0 : item.costoTotal;
+  // Memoizar cálculos pesados para evitar recalcular en cada render
+  const stats = useMemo(() => {
+    // Calcular suma total de costos con validaciones mejoradas
+    const totalCostSum = filteredData.length > 0 
+      ? filteredData.reduce((acc, item) => {
+          // Validar que item existe
+          if (!item) return acc;
+          
+          // Asegurar que costoTotal es un número válido
+          let costo = 0;
+          if (item.costoTotal !== undefined && item.costoTotal !== null) {
+            // Si es string, intentar convertir a número
+            if (typeof item.costoTotal === 'string') {
+              const parsed = parseFloat(item.costoTotal.replace(/[^\d.-]/g, ''));
+              costo = isNaN(parsed) ? 0 : parsed;
+            } else if (typeof item.costoTotal === 'number') {
+              costo = isNaN(item.costoTotal) ? 0 : item.costoTotal;
+            }
           }
-        }
-        // Validar que costo es un número válido y finito
-        return acc + (isFinite(costo) ? costo : 0);
-      }, 0)
-    : 0;
-  
-  // Usar la suma para calcular tanto el total como el promedio con protección contra división por cero
-  const totalCost = isFinite(totalCostSum) ? Math.round(totalCostSum) : 0;
-  const averageCost = (filteredData.length > 0 && isFinite(totalCostSum)) 
-    ? Math.round(totalCostSum / filteredData.length) 
-    : 0;
-  
-  const activeOperators = new Set(
-    filteredData
-      .filter(item => item && item.operador) // Validar que item y operador existen
-      .map(item => item.operador)
-      .filter(operador => operador && operador.trim() !== '') // Filtrar valores vacíos
-  ).size;
+          // Validar que costo es un número válido y finito
+          return acc + (isFinite(costo) ? costo : 0);
+        }, 0)
+      : 0;
+    
+    // Usar la suma para calcular tanto el total como el promedio con protección contra división por cero
+    const totalCost = isFinite(totalCostSum) ? Math.round(totalCostSum) : 0;
+    const averageCost = (filteredData.length > 0 && isFinite(totalCostSum)) 
+      ? Math.round(totalCostSum / filteredData.length) 
+      : 0;
+    
+    const activeOperators = new Set(
+      filteredData
+        .filter(item => item && item.operador) // Validar que item y operador existen
+        .map(item => item.operador)
+        .filter(operador => operador && operador.trim() !== '') // Filtrar valores vacíos
+    ).size;
+    
+    return {
+      totalServices: filteredData.length,
+      completedServices: filteredData.filter(item => item && item.estatus === 'Concluido').length,
+      totalCost,
+      averageCost,
+      activeOperators
+    };
+  }, [filteredData]); // Solo recalcular cuando filteredData cambie
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6 w-full">
       <StatsCard 
         title="Total de Servicios" 
-        value={totalServices}
+        value={stats.totalServices}
         color="blue"
       />
       
       <StatsCard 
         title="Servicios Concluidos" 
-        value={completedServices}
+        value={stats.completedServices}
         color="green"
       />
       
       <StatsCard 
         title="Costo Total" 
-        value={totalCost}
+        value={stats.totalCost}
         prefix="$"
         color="red"
       />
       
       <StatsCard 
         title="Promedio Costo Total" 
-        value={averageCost}
+        value={stats.averageCost}
         prefix="$"
         color="yellow"
       />
       
       <StatsCard 
         title="Operadores Activos" 
-        value={activeOperators}
+        value={stats.activeOperators}
         color="blue"
       />
     </div>

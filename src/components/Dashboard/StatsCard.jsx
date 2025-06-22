@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { formatNumber } from '../../utils/dataFormatters';
 
-// Fragmento completo modificado
-const StatsCard = ({ title, value, color = 'blue', prefix = '' }) => {
+// Fragmento completo modificado - Memoizado para evitar re-renders innecesarios
+const StatsCard = memo(({ title, value, color = 'blue', prefix = '' }) => {
   const bgColors = {
     blue: 'bg-blue-50',
     green: 'bg-green-50',
@@ -26,6 +26,8 @@ const StatsCard = ({ title, value, color = 'blue', prefix = '' }) => {
       </p>
     </div>
   );
-};
+});
+
+StatsCard.displayName = 'StatsCard';
 
 export default StatsCard;

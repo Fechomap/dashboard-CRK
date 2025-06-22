@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Colores para las gráficas
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1', '#a4de6c'];
 
-const PieChartComponent = ({ 
+const PieChartComponent = memo(({ 
   data, 
   title, 
   dataKey = 'cantidad', 
@@ -81,6 +81,8 @@ const PieChartComponent = ({
       </div>
     </div>
   );
-};
+});
+
+PieChartComponent.displayName = 'PieChartComponent';
 
 export default PieChartComponent;

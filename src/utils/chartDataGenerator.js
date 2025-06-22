@@ -1,281 +1,301 @@
-// src/utils/chartDataGenerator.js - Versión corregida
+// src/utils/chartDataGenerator.js - Versión optimizada y sin dependencias de lodash
 
-import _ from 'lodash';
+// Cache para resultados de procesamiento
+const processCache = new Map();
+
+// Función helper para generar clave de cache
+const generateCacheKey = (datos, filters) => {
+  const dataHash = datos.length + '_' + (datos[0]?.fechaRegistro || '') + '_' + (datos[datos.length - 1]?.fechaRegistro || '');
+  const filterHash = JSON.stringify(filters);
+  return `${dataHash}_${filterHash}`;
+};
 
 /**
- * Genera datos para gráficas a partir del dataset filtrado
+ * Genera datos para gráficas a partir del dataset filtrado - OPTIMIZADO
  * @param {Array} datos - Array de datos filtrados
  * @param {Object} filters - Objeto con los filtros aplicados, incluyendo fechaInicio y fechaFin
  * @returns {Object} Objeto con todos los conjuntos de datos para gráficas
  */
 export const generateChartData = (datos, filters = {}) => {
+  // Validación temprana
   if (!datos || !Array.isArray(datos) || datos.length === 0) {
-    return {
-      serviciosPorPeriodo: [],
-      serviciosPorOperador: [],
-      serviciosPorUnidad: [],
-      serviciosPorEstatus: [],
-      serviciosPorCliente: [],
-      serviciosPorHora: [],
-      tituloGraficaTiempo: "Servicios por Mes"
-    };
+    return getEmptyChartData();
+  }
+  
+  // Verificar cache
+  const cacheKey = generateCacheKey(datos, filters);
+  if (processCache.has(cacheKey)) {
+    return processCache.get(cacheKey);
   }
 
   try {
-    // Determinar si debemos agrupar por día o por mes basado en el rango de fechas
-    let agruparPorDia = false;
-    let tituloGraficaTiempo = "Servicios por Mes";
+    // Determinar agrupamiento de manera optimizada
+    const { agruparPorDia, tituloGraficaTiempo } = determinarAgrupamiento(filters);
     
-    if (filters.fechaInicio && filters.fechaFin) {
-      const fechaInicio = new Date(filters.fechaInicio);
-      const fechaFin = new Date(filters.fechaFin);
-      
-      // Calcular la diferencia en días
-      const diferenciaMs = fechaFin.getTime() - fechaInicio.getTime();
-      const diferenciaDias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
-      
-      // Si la diferencia es 31 días o menos, agrupar por día
-      if (diferenciaDias <= 31 && diferenciaDias >= 0) {
-        agruparPorDia = true;
-        tituloGraficaTiempo = "Servicios por Día";
-      }
+    // Procesar datos de manera optimizada usando Maps para mejor rendimiento
+    const result = procesarDatosOptimizado(datos, agruparPorDia, tituloGraficaTiempo, filters);
+    
+    // Guardar en cache
+    processCache.set(cacheKey, result);
+    
+    // Limpiar cache si es muy grande (mantener solo 10 entradas)
+    if (processCache.size > 10) {
+      const firstKey = processCache.keys().next().value;
+      processCache.delete(firstKey);
     }
     
-    // 1. Servicios por período (día o mes)
-    const serviciosPorPeriodo = _.chain(datos)
-      .groupBy(d => {
-        if (!d.fechaRegistro) return 'Sin fecha';
-        try {
-          const date = d.fechaRegistro instanceof Date ? 
-            d.fechaRegistro : new Date(d.fechaRegistro);
-          
-          if (isNaN(date.getTime())) return 'Sin fecha';
-          
-          if (agruparPorDia) {
-            // Formato para agrupar por día: YYYY-MM-DD
-            return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
-          } else {
-            // Formato para agrupar por mes: YYYY-MM
-            return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
-          }
-        } catch (e) {
-          return 'Sin fecha';
-        }
-      })
-      .map((value, key) => { 
-        // Calcular el costo total para este período
-        const costoTotal = value.reduce((sum, item) => {
-          let costo = 0;
-          if (item.costoTotal !== undefined && item.costoTotal !== null) {
-            if (typeof item.costoTotal === 'string') {
-              costo = parseFloat(item.costoTotal.replace(/[^\d.-]/g, '')) || 0;
-            } else {
-              costo = Number(item.costoTotal) || 0;
-            }
-          }
-          return sum + (isNaN(costo) ? 0 : costo);
-        }, 0);
-        
-        // Redondear a 2 decimales
-        const costoRedondeado = Math.round(costoTotal * 100) / 100;
-        
-        return { 
-          periodo: key, 
-          cantidad: value.length,
-          costoTotal: costoRedondeado,
-          // Añadir una propiedad que indique si es día o mes para la visualización
-          tipo: agruparPorDia ? 'dia' : 'mes' 
-        };
-      })
-      .sortBy(['periodo'])
-      .value();
-    
-    // Si el agrupamiento es por día, asegurarnos de que se muestren TODOS los días del rango
-    let serviciosPorPeriodoCompleto = [...serviciosPorPeriodo];
-    
-    if (agruparPorDia && filters.fechaInicio && filters.fechaFin) {
-      try {
-        const fechaInicio = new Date(filters.fechaInicio);
-        const fechaFin = new Date(filters.fechaFin);
-        
-        // Asegurarse que las fechas son válidas
-        if (!isNaN(fechaInicio.getTime()) && !isNaN(fechaFin.getTime())) {
-          const fechaActual = new Date(fechaInicio);
-          const periodosCompletos = [];
-          
-          // Crear un mapa de los períodos existentes para acceso rápido
-          const periodosMap = {};
-          serviciosPorPeriodo.forEach(p => {
-            if (p.periodo !== 'Sin fecha') {
-              periodosMap[p.periodo] = p;
-            }
-          });
-          
-          // Generar todos los días en el rango
-          while (fechaActual <= fechaFin) {
-            const periodoKey = `${fechaActual.getFullYear()}-${(fechaActual.getMonth() + 1).toString().padStart(2, '0')}-${fechaActual.getDate().toString().padStart(2, '0')}`;
-            
-            // Si el período ya existe, usarlo; si no, crear uno con cantidad 0
-            if (periodosMap[periodoKey]) {
-              periodosCompletos.push(periodosMap[periodoKey]);
-            } else {
-              periodosCompletos.push({
-                periodo: periodoKey,
-                cantidad: 0,
-                costoTotal: 0,
-                tipo: 'dia'
-              });
-            }
-            
-            // Avanzar al siguiente día
-            fechaActual.setDate(fechaActual.getDate() + 1);
-          }
-          
-          // Ordenar por período
-          serviciosPorPeriodoCompleto = _.sortBy(periodosCompletos, ['periodo']);
-        }
-      } catch (e) {
-        console.error("Error al completar días:", e);
-      }
-    }
-    
-    // 2. Services by operator
-    const serviciosPorOperador = _.chain(datos)
-      .groupBy(d => d.operador || 'Sin operador')
-      .map((value, key) => ({ operador: key, cantidad: value.length }))
-      .sortBy([o => -o.cantidad])
-      .slice(0, 10)
-      .value();
-    
-    // 3. Services by operational unit
-    const serviciosPorUnidad = _.chain(datos)
-      .groupBy(d => d.unidadOperativa || 'Sin unidad')
-      .map((value, key) => ({ unidad: key, cantidad: value.length }))
-      .sortBy([o => -o.cantidad])
-      .value();
-    
-    // 4. Services by status
-    const serviciosPorEstatus = _.chain(datos)
-      .groupBy(d => d.estatus || 'Sin estatus')
-      .map((value, key) => ({ estatus: key, cantidad: value.length }))
-      .sortBy([o => -o.cantidad])
-      .value();
-    
-    // 5. Services by client
-    const serviciosPorCliente = _.chain(datos)
-      .groupBy(d => d.cliente || 'Sin cliente')
-      .map((value, key) => ({ cliente: key, cantidad: value.length }))
-      .sortBy([o => -o.cantidad])
-      .value();
-    
-    // 6. Services by hour of day (TC)
-    const datosConTC = datos.filter(d => d.tc !== undefined || d.TC !== undefined);
-    const frecuenciaHoras = new Map();
-    
-    // Inicializar con todas las horas del día (0-23) con valor 0
-    for (let i = 0; i < 24; i++) {
-      const horaFormateada = `${i.toString().padStart(2, '0')}:00`;
-      frecuenciaHoras.set(horaFormateada, 0);
-    }
-    
-    // Procesar datos de TC y contar frecuencias
-    datosConTC.forEach(d => {
-      try {
-        const tcValor = d.tc !== undefined ? d.tc : d.TC;
-        
-        if (tcValor === undefined || tcValor === null) {
-          return;
-        }
-        
-        let hora = null;
-        
-        // CASO 1: Si TC es una fecha ya parseada
-        if (tcValor instanceof Date) {
-          hora = tcValor.getHours();
-        }
-        // CASO 2: Si TC es un string con formato fecha y hora (DD/MM/YYYY HH:MM:SS)
-        else if (typeof tcValor === 'string') {
-          const regexFechaHora = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})\s+(\d{1,2})[:\.](\d{1,2})(?:[:\.](\d{1,2}))?/;
-          const matchFechaHora = tcValor.match(regexFechaHora);
-          
-          if (matchFechaHora) {
-            hora = parseInt(matchFechaHora[4], 10);
-          } else {
-            const regexHora = /^(\d{1,2})[:\.](\d{1,2})(?:[:\.](\d{1,2}))?$/;
-            const matchHora = tcValor.match(regexHora);
-            
-            if (matchHora) {
-              hora = parseInt(matchHora[1], 10);
-            } else {
-              const fecha = new Date(tcValor);
-              if (!isNaN(fecha.getTime())) {
-                hora = fecha.getHours();
-              } else {
-                const numeroPosible = parseFloat(tcValor);
-                if (!isNaN(numeroPosible)) {
-                  hora = Math.floor(numeroPosible);
-                }
-              }
-            }
-          }
-        }
-        // CASO 3: Si TC es un número
-        else if (typeof tcValor === 'number') {
-          if (tcValor > 1000000000) {
-            const fecha = new Date(tcValor);
-            if (!isNaN(fecha.getTime())) {
-              hora = fecha.getHours();
-            }
-          } else {
-            hora = Math.floor(tcValor);
-          }
-        }
-        
-        if (hora !== null && hora >= 0 && hora <= 23) {
-          const horaFormateada = `${hora.toString().padStart(2, '0')}:00`;
-          frecuenciaHoras.set(horaFormateada, (frecuenciaHoras.get(horaFormateada) || 0) + 1);
-        }
-      } catch (e) {
-        console.warn('Error al procesar TC para hora:', e);
-      }
-    });
-    
-    const serviciosPorHora = Array.from(frecuenciaHoras.entries())
-      .map(([hora, cantidad]) => ({ hora, cantidad }))
-      .sort((a, b) => {
-        const horaA = parseInt(a.hora.split(':')[0], 10);
-        const horaB = parseInt(b.hora.split(':')[0], 10);
-        return horaA - horaB;
-      });
-    
-    // Para depuración
-    console.log("Generación de datos completada:", {
-      agrupamiento: agruparPorDia ? 'por día' : 'por mes',
-      totalPeriodos: serviciosPorPeriodoCompleto.length,
-      operadores: serviciosPorOperador.length,
-      unidades: serviciosPorUnidad.length,
-      estatus: serviciosPorEstatus.length
-    });
-    
-    return {
-      serviciosPorPeriodo: serviciosPorPeriodoCompleto,
-      serviciosPorOperador,
-      serviciosPorUnidad,
-      serviciosPorEstatus,
-      serviciosPorCliente,
-      serviciosPorHora,
-      tituloGraficaTiempo
-    };
+    return result;
   } catch (error) {
     console.error('Error al generar datos para gráficas:', error);
-    return {
-      serviciosPorPeriodo: [],
-      serviciosPorOperador: [],
-      serviciosPorUnidad: [],
-      serviciosPorEstatus: [],
-      serviciosPorCliente: [],
-      serviciosPorHora: [],
-      tituloGraficaTiempo: "Servicios por Mes"
-    };
+    return getEmptyChartData();
   }
+};
+
+// Funciones helper optimizadas
+
+/**
+ * Retorna estructura vacía de datos de gráficos
+ */
+const getEmptyChartData = () => ({
+  serviciosPorPeriodo: [],
+  serviciosPorOperador: [],
+  serviciosPorUnidad: [],
+  serviciosPorEstatus: [],
+  serviciosPorCliente: [],
+  serviciosPorHora: [],
+  tituloGraficaTiempo: "Servicios por Mes"
+});
+
+/**
+ * Determina el tipo de agrupamiento basado en filtros
+ */
+const determinarAgrupamiento = (filters) => {
+  let agruparPorDia = false;
+  let tituloGraficaTiempo = "Servicios por Mes";
+  
+  if (filters.fechaInicio && filters.fechaFin) {
+    const fechaInicio = new Date(filters.fechaInicio);
+    const fechaFin = new Date(filters.fechaFin);
+    
+    // Calcular la diferencia en días de manera optimizada
+    const diferenciaMs = fechaFin.getTime() - fechaInicio.getTime();
+    const diferenciaDias = Math.ceil(diferenciaMs / 86400000); // 1000 * 60 * 60 * 24 = 86400000
+    
+    // Si la diferencia es 31 días o menos, agrupar por día
+    if (diferenciaDias <= 31 && diferenciaDias >= 0) {
+      agruparPorDia = true;
+      tituloGraficaTiempo = "Servicios por Día";
+    }
+  }
+  
+  return { agruparPorDia, tituloGraficaTiempo };
+};
+
+/**
+ * Procesa datos de manera optimizada usando Maps
+ */
+const procesarDatosOptimizado = (datos, agruparPorDia, tituloGraficaTiempo, filters) => {
+  // Usar Maps para mejor rendimiento en agrupamiento
+  const periodMap = new Map();
+  const operadorMap = new Map();
+  const unidadMap = new Map();
+  const estatusMap = new Map();
+  const clienteMap = new Map();
+  const horaMap = new Map();
+
+  // Inicializar mapa de horas (0-23)
+  for (let i = 0; i < 24; i++) {
+    horaMap.set(`${i.toString().padStart(2, '0')}:00`, 0);
+  }
+
+  // Un solo bucle para procesar todos los datos
+  datos.forEach(item => {
+    if (!item) return;
+
+    // 1. Procesar período
+    const periodo = obtenerPeriodoOptimizado(item.fechaRegistro, agruparPorDia);
+    updateMapWithCost(periodMap, periodo, item.costoTotal);
+    
+    // 2. Procesar operador
+    const operador = item.operador || 'Sin operador';
+    incrementMap(operadorMap, operador);
+    
+    // 3. Procesar unidad
+    const unidad = item.unidadOperativa || 'Sin unidad';
+    incrementMap(unidadMap, unidad);
+    
+    // 4. Procesar estatus
+    const estatus = item.estatus || 'Sin estatus';
+    incrementMap(estatusMap, estatus);
+    
+    // 5. Procesar cliente
+    const cliente = item.cliente || 'Sin cliente';
+    incrementMap(clienteMap, cliente);
+    
+    // 6. Procesar hora (solo si tiene TC)
+    procesarHoraOptimizada(item, horaMap);
+  });
+
+  // Convertir Maps a arrays de manera optimizada
+  return {
+    serviciosPorPeriodo: procesarPeriodos(periodMap, filters, agruparPorDia),
+    serviciosPorOperador: mapToSortedArray(operadorMap, 'operador', 10),
+    serviciosPorUnidad: mapToSortedArray(unidadMap, 'unidad'),
+    serviciosPorEstatus: mapToSortedArray(estatusMap, 'estatus'),
+    serviciosPorCliente: mapToSortedArray(clienteMap, 'cliente'),
+    serviciosPorHora: Array.from(horaMap.entries())
+      .map(([hora, cantidad]) => ({ hora, cantidad })),
+    tituloGraficaTiempo
+  };
+};
+
+/**
+ * Helper para incrementar contador en Map
+ */
+const incrementMap = (map, key) => {
+  map.set(key, (map.get(key) || 0) + 1);
+};
+
+/**
+ * Helper para actualizar Map con costo
+ */
+const updateMapWithCost = (map, key, costo) => {
+  if (!map.has(key)) {
+    map.set(key, { cantidad: 0, costoTotal: 0 });
+  }
+  const current = map.get(key);
+  current.cantidad++;
+  current.costoTotal += parseCostoSeguro(costo);
+};
+
+/**
+ * Parser seguro de costos
+ */
+const parseCostoSeguro = (costo) => {
+  if (!costo) return 0;
+  if (typeof costo === 'number') return isFinite(costo) ? costo : 0;
+  if (typeof costo === 'string') {
+    const parsed = parseFloat(costo.replace(/[^\d.-]/g, ''));
+    return isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+};
+
+/**
+ * Obtener período de manera optimizada
+ */
+const obtenerPeriodoOptimizado = (fechaRegistro, agruparPorDia) => {
+  if (!fechaRegistro) return 'Sin fecha';
+  
+  try {
+    const date = fechaRegistro instanceof Date ? fechaRegistro : new Date(fechaRegistro);
+    
+    if (isNaN(date.getTime())) return 'Sin fecha';
+    
+    if (agruparPorDia) {
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+    } else {
+      const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      return `${meses[date.getMonth()]} ${date.getFullYear()}`;
+    }
+  } catch {
+    return 'Sin fecha';
+  }
+};
+
+/**
+ * Procesar hora de manera optimizada
+ */
+const procesarHoraOptimizada = (item, horaMap) => {
+  if (!item.tc) return;
+  
+  try {
+    const tcDate = item.tc instanceof Date ? item.tc : new Date(item.tc);
+    if (!isNaN(tcDate.getTime())) {
+      const hora = `${tcDate.getHours().toString().padStart(2, '0')}:00`;
+      horaMap.set(hora, horaMap.get(hora) + 1);
+    }
+  } catch {
+    // Ignorar errores de parsing de fecha
+  }
+};
+
+/**
+ * Convertir Map a array ordenado
+ */
+const mapToSortedArray = (map, nameKey, limit = null) => {
+  let result = Array.from(map.entries())
+    .map(([key, value]) => ({ [nameKey]: key, cantidad: value }))
+    .sort((a, b) => b.cantidad - a.cantidad);
+    
+  if (limit) {
+    result = result.slice(0, limit);
+  }
+  
+  return result;
+};
+
+/**
+ * Procesar períodos con completado de fechas faltantes
+ */
+const procesarPeriodos = (periodMap, filters, agruparPorDia) => {
+  // Convertir Map a array
+  let result = Array.from(periodMap.entries())
+    .map(([periodo, data]) => ({
+      periodo,
+      cantidad: data.cantidad,
+      costoTotal: Math.round(data.costoTotal)
+    }));
+
+  // Completar períodos faltantes si hay filtros de fecha
+  if (filters.fechaInicio && filters.fechaFin && agruparPorDia) {
+    result = completarPeriodosFaltantes(result, filters.fechaInicio, filters.fechaFin);
+  }
+
+  // Ordenar por fecha
+  return result.sort((a, b) => {
+    if (agruparPorDia) {
+      const [diaA, mesA] = a.periodo.split('/').map(Number);
+      const [diaB, mesB] = b.periodo.split('/').map(Number);
+      return mesA !== mesB ? mesA - mesB : diaA - diaB;
+    } else {
+      // Para meses, ordenar por año y mes
+      const fechaA = new Date(a.periodo.split(' ')[1], getMesIndex(a.periodo.split(' ')[0]));
+      const fechaB = new Date(b.periodo.split(' ')[1], getMesIndex(b.periodo.split(' ')[0]));
+      return fechaA.getTime() - fechaB.getTime();
+    }
+  });
+};
+
+/**
+ * Completar períodos faltantes para días
+ */
+const completarPeriodosFaltantes = (data, fechaInicio, fechaFin) => {
+  const inicio = new Date(fechaInicio);
+  const fin = new Date(fechaFin);
+  const dataMap = new Map(data.map(d => [d.periodo, d]));
+  const resultado = [];
+
+  const fechaActual = new Date(inicio);
+  while (fechaActual <= fin) {
+    const periodo = `${fechaActual.getDate().toString().padStart(2, '0')}/${(fechaActual.getMonth() + 1).toString().padStart(2, '0')}`;
+    
+    resultado.push(dataMap.get(periodo) || {
+      periodo,
+      cantidad: 0,
+      costoTotal: 0
+    });
+    
+    fechaActual.setDate(fechaActual.getDate() + 1);
+  }
+
+  return resultado;
+};
+
+/**
+ * Obtener índice de mes
+ */
+const getMesIndex = (mesNombre) => {
+  const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  return meses.indexOf(mesNombre);
 };

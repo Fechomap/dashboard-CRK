@@ -1,11 +1,11 @@
 // src/components/Dashboard/ChartGrid.jsx - Versión con ancho completo
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import LineChartComponent from './ChartComponents/LineChartComponent';
 import BarChartComponent from './ChartComponents/BarChartComponent';
 import PieChartComponent from './ChartComponents/PieChartComponent';
 import { useDashboard } from '../../context/DashboardContext';
 
-const ChartGrid = ({ chartData, onChartClick }) => {
+const ChartGrid = memo(({ chartData, onChartClick }) => {
   // Obtener el título dinámico de la gráfica de tiempo (puede ser "Servicios por Mes" o "Servicios por Día")
   const tituloGraficaTiempo = chartData.tituloGraficaTiempo || "Servicios por Mes";
   
@@ -112,6 +112,9 @@ const ChartGrid = ({ chartData, onChartClick }) => {
       </div>
     </div>
   );
-};
+});
+
+// Comparación personalizada para optimizar re-renders
+ChartGrid.displayName = 'ChartGrid';
 
 export default ChartGrid;

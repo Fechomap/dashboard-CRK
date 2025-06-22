@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const BarChartComponent = ({ 
+const BarChartComponent = memo(({ 
   data, 
   title, 
   dataKey = 'cantidad', 
@@ -112,6 +112,8 @@ const BarChartComponent = ({
       </div>
     </div>
   );
-};
+});
+
+BarChartComponent.displayName = 'BarChartComponent';
 
 export default BarChartComponent;

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const LineChartComponent = ({ data, title, nameKey = "periodo" }) => {
+const LineChartComponent = memo(({ data, title, nameKey = "periodo" }) => {
   if (!data || data.length === 0) {
     return (
       <div className="bg-white p-4 rounded shadow">
@@ -117,6 +117,8 @@ const LineChartComponent = ({ data, title, nameKey = "periodo" }) => {
       </div>
     </div>
   );
-};
+});
+
+LineChartComponent.displayName = 'LineChartComponent';
 
 export default LineChartComponent;

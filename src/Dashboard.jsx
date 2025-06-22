@@ -14,31 +14,27 @@ import DataTable from './components/Dashboard/DataTable';
 import EmptyState from './components/Dashboard/EmptyState';
 import AnalyticsAssistant from './components/Dashboard/AnalyticsAssistant';
 
-// Context
-import { useDashboard } from './context/DashboardContext';
+// Contexts especializados
+import { useData } from './contexts/DataContext.jsx';
+import { useFilterContext } from './contexts/FilterContext.jsx';
+import { useChart } from './contexts/ChartContext.jsx';
+import { useExport } from './contexts/ExportContext.jsx';
 
 const Dashboard = () => {
+  // Contextos especializados
+  const { data, loading, error, fileName, handleFileUpload, clearData } = useData();
   const { 
-    data, 
-    loading, 
-    error, 
-    fileName, 
-    filteredData,
-    filterOptions,
-    filters,
-    chartData,
-    exportLoading,
-    statsRef,
-    handleFileUpload, 
-    clearData,
-    handleCheckboxChange,
-    selectAll,
-    resetFilters,
-    handleDateChange,
-    handleQuickDateFilter,
-    handleChartClick,
-    exportData
-  } = useDashboard();
+    filteredData, 
+    filterOptions, 
+    filters, 
+    handleCheckboxChange, 
+    selectAll, 
+    resetFilters, 
+    handleDateChange, 
+    handleQuickDateFilter 
+  } = useFilterContext();
+  const { chartData, handleChartClick, statsRef } = useChart();
+  const { exportLoading, exportData } = useExport();
   
   // Referencia local para las estadísticas
   const statsContainerRef = useRef(null);

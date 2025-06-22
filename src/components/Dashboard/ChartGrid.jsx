@@ -3,7 +3,7 @@ import React, { useEffect, useRef, memo } from 'react';
 import LineChartComponent from './ChartComponents/LineChartComponent';
 import BarChartComponent from './ChartComponents/BarChartComponent';
 import PieChartComponent from './ChartComponents/PieChartComponent';
-import { useDashboard } from '../../context/DashboardContext';
+import { useChart } from '../../contexts/ChartContext.jsx';
 
 const ChartGrid = memo(({ chartData, onChartClick }) => {
   // Obtener el título dinámico de la gráfica de tiempo (puede ser "Servicios por Mes" o "Servicios por Día")
@@ -18,7 +18,7 @@ const ChartGrid = memo(({ chartData, onChartClick }) => {
   const hourChartRef = useRef(null);
   
   // Obtener la función del contexto para registrar referencias
-  const { chartRefs } = useDashboard();
+  const { chartRefs } = useChart();
   
   // Registrar referencias para exportación con cleanup
   useEffect(() => {

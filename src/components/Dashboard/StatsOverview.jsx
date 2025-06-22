@@ -1,6 +1,7 @@
 // src/components/Dashboard/StatsOverview.jsx - Versión con ancho completo
 import React, { useMemo } from 'react';
 import StatsCard from './StatsCard';
+import StatisticsService from '../../services/StatisticsService';
 
 const StatsOverview = ({ filteredData }) => {
   // Validar que filteredData es un array válido
@@ -13,47 +14,17 @@ const StatsOverview = ({ filteredData }) => {
   
   // Memoizar cálculos pesados para evitar recalcular en cada render
   const stats = useMemo(() => {
-    // Calcular suma total de costos con validaciones mejoradas
-    const totalCostSum = filteredData.length > 0 
-      ? filteredData.reduce((acc, item) => {
-          // Validar que item existe
-          if (!item) return acc;
-          
-          // Asegurar que costoTotal es un número válido
-          let costo = 0;
-          if (item.costoTotal !== undefined && item.costoTotal !== null) {
-            // Si es string, intentar convertir a número
-            if (typeof item.costoTotal === 'string') {
-              const parsed = parseFloat(item.costoTotal.replace(/[^\d.-]/g, ''));
-              costo = isNaN(parsed) ? 0 : parsed;
-            } else if (typeof item.costoTotal === 'number') {
-              costo = isNaN(item.costoTotal) ? 0 : item.costoTotal;
-            }
-          }
-          // Validar que costo es un número válido y finito
-          return acc + (isFinite(costo) ? costo : 0);
-        }, 0)
-      : 0;
-    
-    // Usar la suma para calcular tanto el total como el promedio con protección contra división por cero
-    const totalCost = isFinite(totalCostSum) ? Math.round(totalCostSum) : 0;
-    const averageCost = (filteredData.length > 0 && isFinite(totalCostSum)) 
-      ? Math.round(totalCostSum / filteredData.length) 
-      : 0;
-    
-    const activeOperators = new Set(
-      filteredData
-        .filter(item => item && item.operador) // Validar que item y operador existen
-        .map(item => item.operador)
-        .filter(operador => operador && operador.trim() !== '') // Filtrar valores vacíos
-    ).size;
+    // Usar el servicio de estadísticas para los cálculos
+    const financialMetrics = StatisticsService.calculateFinancialMetrics(filteredData);
+    const operatorMetrics = StatisticsService.calculateOperatorMetrics(filteredData);
+    const completionMetrics = StatisticsService.calculateCompletionRate(filteredData);
     
     return {
-      totalServices: filteredData.length,
-      completedServices: filteredData.filter(item => item && item.estatus === 'Concluido').length,
-      totalCost,
-      averageCost,
-      activeOperators
+      totalServices: financialMetrics.totalServices,
+      completedServices: completionMetrics.completedServices,
+      totalCost: financialMetrics.totalCost,
+      averageCost: financialMetrics.averageCost,
+      activeOperators: operatorMetrics.activeOperators
     };
   }, [filteredData]); // Solo recalcular cuando filteredData cambie
 

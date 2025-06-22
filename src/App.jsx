@@ -1,8 +1,8 @@
-// src/App.jsx - Versión con ancho completo
+// src/App.jsx - Versión con arquitectura refactorizada
 import React from 'react';
 import './App.css';
 import Dashboard from './Dashboard';
-import { DashboardProvider } from './context/DashboardContext';
+import { DashboardProvider } from './contexts/DashboardProvider.jsx';
 
 function App() {
   return (

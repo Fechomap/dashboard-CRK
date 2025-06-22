@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useDashboard } from '../../context/DashboardContext';
+import { useFilterContext } from '../../contexts/FilterContext.jsx';
+import { useChart } from '../../contexts/ChartContext.jsx';
+import { useData } from '../../contexts/DataContext.jsx';
 import Button from '../common/Button';
 import LoadingSpinner from '../common/LoadingSpinner';
 import OpenAIService from '../../services/OpenAIService';
 import OpenAIKeyConfig from './OpenAIKeyConfig';
 
 const AnalyticsAssistant = () => {
-  const { 
-    filteredData, 
-    chartData, 
-    filters, 
-    fileName 
-  } = useDashboard();
+  const { filteredData, filters } = useFilterContext();
+  const { chartData } = useChart();
+  const { fileName } = useData();
   
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -305,6 +304,29 @@ const AnalyticsAssistant = () => {
     return insights;
   };
   
+  const getSimulatedAnalysis = () => {
+    return {
+      executive_summary: {
+        title: "Resumen Ejecutivo",
+        content: "Este análisis simulado proporciona una visión general de los datos actuales. Los patrones identificados sugieren oportunidades de mejora en la eficiencia operativa y distribución de recursos."
+      },
+      sections: [
+        {
+          title: "Análisis de Tendencias",
+          content: "Los datos muestran patrones consistentes en la distribución temporal y por operador. Se recomienda evaluar la carga de trabajo y considerar optimizaciones en los procesos."
+        },
+        {
+          title: "Oportunidades de Mejora",
+          content: "Existen oportunidades para mejorar la eficiencia mediante una mejor distribución de la carga de trabajo y optimización de los horarios de servicio."
+        }
+      ],
+      conclusion: {
+        title: "Conclusiones",
+        content: "Este análisis simulado muestra el potencial del sistema. Para obtener insights más profundos y específicos, configure una API key de OpenAI."
+      }
+    };
+  };
+
   const formatPeriodo = (periodo) => {
     if (!periodo) return '';
     

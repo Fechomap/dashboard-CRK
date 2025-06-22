@@ -205,7 +205,7 @@ const FilterPanel = ({
   };
   
   // Componente para el header de sección clickeable
-  const FilterHeader = ({ section, title, icon, count = 0 }) => {
+  const FilterHeader = ({ section, title, icon }) => {
     const isOpen = openSection === section;
     
     return (
@@ -223,14 +223,7 @@ const FilterPanel = ({
           }`}>
             {icon}
           </div>
-          <div className="text-left">
-            <h3 className="font-medium text-gray-700">{title}</h3>
-            {count > 0 && (
-              <span className="text-xs text-blue-600 font-medium">
-                {count} seleccionado{count !== 1 ? 's' : ''}
-              </span>
-            )}
-          </div>
+          <h3 className="font-medium text-gray-700">{title}</h3>
         </div>
         <svg 
           className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
@@ -305,7 +298,6 @@ const FilterPanel = ({
             <FilterHeader 
               section="fechas" 
               title="Rango de Fechas" 
-              count={filters.fechaInicio || filters.fechaFin ? 1 : 0}
               icon={
                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -317,7 +309,6 @@ const FilterPanel = ({
             <FilterHeader 
               section="filtrosRapidos" 
               title="Filtros Rápidos" 
-              count={0}
               icon={
                 <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -329,7 +320,6 @@ const FilterPanel = ({
             <FilterHeader 
               section="estados" 
               title="Estados" 
-              count={filters.estatus?.length || 0}
               icon={
                 <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -341,7 +331,6 @@ const FilterPanel = ({
             <FilterHeader 
               section="operadores" 
               title="Operadores" 
-              count={filters.operador?.length || 0}
               icon={
                 <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>

@@ -274,6 +274,11 @@ class PDFExportService {
       link.click();
       document.body.removeChild(link);
       
+      // Limpiar la URL del blob para evitar memory leaks
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 100);
+      
       return true;
     } catch (error) {
       console.error('Error al exportar a PDF:', error);

@@ -20,7 +20,7 @@ const ChartGrid = ({ chartData, onChartClick }) => {
   // Obtener la función del contexto para registrar referencias
   const { chartRefs } = useDashboard();
   
-  // Registrar referencias para exportación
+  // Registrar referencias para exportación con cleanup
   useEffect(() => {
     // Actualizar referencias en el contexto
     if (chartRefs) {
@@ -31,6 +31,18 @@ const ChartGrid = ({ chartData, onChartClick }) => {
       chartRefs.clientChart = clientChartRef;
       chartRefs.hourChart = hourChartRef;
     }
+    
+    // Cleanup function para limpiar referencias cuando el componente se desmonta
+    return () => {
+      if (chartRefs) {
+        chartRefs.lineChart = null;
+        chartRefs.operatorChart = null;
+        chartRefs.statusChart = null;
+        chartRefs.unitChart = null;
+        chartRefs.clientChart = null;
+        chartRefs.hourChart = null;
+      }
+    };
   }, [chartRefs]);
   
   return (

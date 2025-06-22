@@ -3,37 +3,52 @@ import React from 'react';
 import StatsCard from './StatsCard';
 
 const StatsOverview = ({ filteredData }) => {
+  // Validar que filteredData es un array válido
+  if (!Array.isArray(filteredData)) {
+    console.warn('StatsOverview: filteredData no es un array válido:', filteredData);
+    return null;
+  }
+  
   // Calculate statistics from the filtered data
   const totalServices = filteredData.length;
   
   const completedServices = filteredData.filter(
-    item => item.estatus === 'Concluido'
+    item => item && item.estatus === 'Concluido'
   ).length;
   
-  // Calcular suma total de costos
+  // Calcular suma total de costos con validaciones mejoradas
   const totalCostSum = filteredData.length > 0 
     ? filteredData.reduce((acc, item) => {
+        // Validar que item existe
+        if (!item) return acc;
+        
         // Asegurar que costoTotal es un número válido
         let costo = 0;
         if (item.costoTotal !== undefined && item.costoTotal !== null) {
           // Si es string, intentar convertir a número
           if (typeof item.costoTotal === 'string') {
-            costo = parseFloat(item.costoTotal.replace(/[^\d.-]/g, '')) || 0;
-          } else {
-            costo = Number(item.costoTotal) || 0;
+            const parsed = parseFloat(item.costoTotal.replace(/[^\d.-]/g, ''));
+            costo = isNaN(parsed) ? 0 : parsed;
+          } else if (typeof item.costoTotal === 'number') {
+            costo = isNaN(item.costoTotal) ? 0 : item.costoTotal;
           }
         }
-        // Ignorar NaN o valores no numéricos en el cálculo
-        return acc + (isNaN(costo) ? 0 : costo);
+        // Validar que costo es un número válido y finito
+        return acc + (isFinite(costo) ? costo : 0);
       }, 0)
     : 0;
   
-  // Usar la suma para calcular tanto el total como el promedio
-  const totalCost = Math.round(totalCostSum);
-  const averageCost = filteredData.length > 0 ? Math.round(totalCostSum / filteredData.length) : 0;
+  // Usar la suma para calcular tanto el total como el promedio con protección contra división por cero
+  const totalCost = isFinite(totalCostSum) ? Math.round(totalCostSum) : 0;
+  const averageCost = (filteredData.length > 0 && isFinite(totalCostSum)) 
+    ? Math.round(totalCostSum / filteredData.length) 
+    : 0;
   
   const activeOperators = new Set(
-    filteredData.map(item => item.operador).filter(Boolean)
+    filteredData
+      .filter(item => item && item.operador) // Validar que item y operador existen
+      .map(item => item.operador)
+      .filter(operador => operador && operador.trim() !== '') // Filtrar valores vacíos
   ).size;
 
   return (

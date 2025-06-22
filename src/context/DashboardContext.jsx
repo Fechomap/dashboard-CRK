@@ -131,17 +131,19 @@ export const DashboardProvider = ({ children }) => {
     
     try {
       switch (chartType) {
-        case 'operador':
+        case 'operador': {
           const operadorValue = data.payload.operador;
           const isOperadorSelected = filters.operador.includes(operadorValue);
           handleCheckboxChange('operador', operadorValue, !isOperadorSelected);
           break;
-        case 'estatus':
+        }
+        case 'estatus': {
           const estatusValue = data.payload.estatus;
           const isEstatusSelected = filters.estatus.includes(estatusValue);
           handleCheckboxChange('estatus', estatusValue, !isEstatusSelected);
           break;
-        case 'cliente':
+        }
+        case 'cliente': {
           const clienteValue = data.payload.cliente;
           if (clienteValue && !filters.cliente) {
             // Si no existe el filtro cliente, crearlo
@@ -157,6 +159,7 @@ export const DashboardProvider = ({ children }) => {
             }
           }
           break;
+        }
         default:
           break;
       }
@@ -185,27 +188,38 @@ export const DashboardProvider = ({ children }) => {
         chartRefs.hourChart.current
       ].filter(Boolean); // Filtrar referencias nulas
       
-      // Calcular estadísticas
+      // Calcular estadísticas con validaciones mejoradas
       const totalServices = filteredData.length;
-      const completedServices = filteredData.filter(item => item.estatus === 'Concluido').length;
+      const completedServices = filteredData.filter(item => item && item.estatus === 'Concluido').length;
       
       const totalCostSum = filteredData.reduce((acc, item) => {
+        // Validar que item existe
+        if (!item) return acc;
+        
         let costo = 0;
         if (item.costoTotal !== undefined && item.costoTotal !== null) {
           if (typeof item.costoTotal === 'string') {
-            costo = parseFloat(item.costoTotal.replace(/[^\d.-]/g, '')) || 0;
-          } else {
-            costo = Number(item.costoTotal) || 0;
+            const parsed = parseFloat(item.costoTotal.replace(/[^\d.-]/g, ''));
+            costo = isNaN(parsed) ? 0 : parsed;
+          } else if (typeof item.costoTotal === 'number') {
+            costo = isNaN(item.costoTotal) ? 0 : item.costoTotal;
           }
         }
-        return acc + (isNaN(costo) ? 0 : costo);
+        // Validar que costo es finito
+        return acc + (isFinite(costo) ? costo : 0);
       }, 0);
       
-      const totalCost = Math.round(totalCostSum);
-      const averageCost = filteredData.length > 0 ? Math.round(totalCostSum / filteredData.length) : 0;
+      const totalCost = isFinite(totalCostSum) ? Math.round(totalCostSum) : 0;
+      // Proteger contra división por cero y valores no finitos
+      const averageCost = (filteredData.length > 0 && isFinite(totalCostSum)) 
+        ? Math.round(totalCostSum / filteredData.length) 
+        : 0;
       
       const activeOperators = new Set(
-        filteredData.map(item => item.operador).filter(Boolean)
+        filteredData
+          .filter(item => item && item.operador) // Validar que item y operador existen
+          .map(item => item.operador)
+          .filter(operador => operador && operador.trim() !== '') // Filtrar valores vacíos
       ).size;
       
       // Estadísticas para el PDF

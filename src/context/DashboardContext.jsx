@@ -1,5 +1,5 @@
 // src/context/DashboardContext.jsx
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useExcelData } from '../hooks/useExcelData';
 import { useFilters } from '../hooks/useFilters';
 import { extractFilterOptions } from '../utils/excelProcessor';
@@ -108,25 +108,25 @@ export const DashboardProvider = ({ children }) => {
     }
   }, [filteredData, filters]);
 
-  // Manejador para cambios de fecha
-  const handleDateChange = (fieldName, value) => {
+  // Manejador memoizado para cambios de fecha
+  const handleDateChange = useCallback((fieldName, value) => {
     setFilters(prev => ({
       ...prev,
       [fieldName]: value
     }));
-  };
+  }, [setFilters]);
   
-  // Manejador para filtros rápidos de fecha
-  const handleQuickDateFilter = (startDate, endDate) => {
+  // Manejador memoizado para filtros rápidos de fecha
+  const handleQuickDateFilter = useCallback((startDate, endDate) => {
     setFilters(prev => ({
       ...prev,
       fechaInicio: startDate,
       fechaFin: endDate
     }));
-  };
+  }, [setFilters]);
   
-  // Manejador para clics en gráficos
-  const handleChartClick = (chartType, data) => {
+  // Manejador memoizado para clics en gráficos
+  const handleChartClick = useCallback((chartType, data) => {
     if (!data || !data.payload) return;
     
     try {
@@ -166,10 +166,10 @@ export const DashboardProvider = ({ children }) => {
     } catch (error) {
       console.error("Error al manejar clic en gráfica:", error);
     }
-  };
+  }, [filters, handleCheckboxChange, setFilters]);
   
-  // Exportar gráficos a PDF
-  const exportData = async () => {
+  // Función memoizada para exportar gráficos a PDF
+  const exportData = useCallback(async () => {
     if (!filteredData || filteredData.length === 0) {
       alert("No hay datos para exportar");
       return;
@@ -250,17 +250,17 @@ export const DashboardProvider = ({ children }) => {
       alert(`Error al exportar: ${error.message}`);
       setExportLoading(false);
     }
-  };
+  }, [filteredData, chartRefs, filters, fileName]);
   
-  // Función para registrar referencias de gráficos
-  const registerChartRef = (name, ref) => {
+  // Función memoizada para registrar referencias de gráficos
+  const registerChartRef = useCallback((name, ref) => {
     if (name && ref) {
       chartRefs[name] = ref;
     }
-  };
+  }, [chartRefs]);
   
-  // Valores que se proveerán a través del contexto
-  const value = {
+  // Valores memoizados que se proveerán a través del contexto
+  const value = useMemo(() => ({
     // Estado
     data,
     loading,
@@ -288,7 +288,31 @@ export const DashboardProvider = ({ children }) => {
     handleChartClick,
     exportData,
     registerChartRef
-  };
+  }), [
+    // Dependencies - solo las que realmente cambian
+    data,
+    loading,
+    error,
+    fileName,
+    filteredData,
+    filters,
+    filterOptions,
+    chartData,
+    exportLoading,
+    chartRefs,
+    statsRef,
+    handleFileUpload,
+    clearData,
+    handleCheckboxChange,
+    selectAll,
+    removeAll,
+    resetFilters,
+    handleDateChange,
+    handleQuickDateFilter,
+    handleChartClick,
+    exportData,
+    registerChartRef
+  ]);
   
   return (
     <DashboardContext.Provider value={value}>

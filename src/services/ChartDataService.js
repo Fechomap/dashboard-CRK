@@ -7,7 +7,7 @@ class ChartDataService {
   
   // Cache estático para resultados de procesamiento
   static processCache = new Map();
-  static readonly MAX_CACHE_SIZE = 15;
+  static MAX_CACHE_SIZE = 15;
 
   /**
    * Función helper para generar clave de cache única

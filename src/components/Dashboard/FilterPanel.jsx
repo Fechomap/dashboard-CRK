@@ -1,5 +1,5 @@
 // src/components/Dashboard/FilterPanel.jsx - Versión con sistema de overlay
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import CheckboxFilter from './FilterComponents/CheckboxFilter';
 import DateFilter from './FilterComponents/DateFilter';
 import QuickDateFilter from './FilterComponents/QuickDateFilter';
@@ -15,15 +15,30 @@ const FilterPanel = ({
   // Estado para controlar qué sección está abierta (solo una a la vez)
   const [openSection, setOpenSection] = useState(null);
   
-  // Función para alternar el estado de una sección
-  const toggleSection = (section) => {
-    setOpenSection(prev => prev === section ? null : section);
-  };
+  // Estado para controlar la animación de confirmación en filtros rápidos
+  const [showingCheckmark, setShowingCheckmark] = useState(null);
   
-  // Función para cerrar overlay
-  const closeOverlay = () => {
+  // Función para alternar el estado de una sección (memoizada)
+  const toggleSection = useCallback((section) => {
+    setOpenSection(prev => prev === section ? null : section);
+  }, []);
+  
+  // Función para cerrar overlay (memoizada)
+  const closeOverlay = useCallback(() => {
     setOpenSection(null);
-  };
+  }, []);
+  
+  // Función wrapper para filtros rápidos con animación de confirmación (memoizada)
+  const handleQuickDateFilterWithAnimation = useCallback(async (startDate, endDate, filterName) => {
+    setShowingCheckmark(filterName); // Mostrar palomita en el botón específico
+    
+    // Esperar a que se vea la animación
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    onQuickDateFilter(startDate, endDate); // Aplicar filtro
+    closeOverlay(); // Cerrar modal
+    setShowingCheckmark(null); // Reset estado de animación
+  }, [onQuickDateFilter, closeOverlay]);
   
   // Función para formatear fecha
   const formatDate = (dateStr) => {
@@ -239,41 +254,51 @@ const FilterPanel = ({
     );
   };
   
-  // Componente para el overlay del contenido del filtro
-  const FilterOverlay = ({ section, title, children }) => {
-    if (openSection !== section) return null;
-    
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        {/* Backdrop */}
-        <div 
-          className="absolute inset-0 bg-black bg-opacity-30 transition-opacity duration-200"
-          onClick={closeOverlay}
-        />
-        
-        {/* Modal Content */}
-        <div className="relative bg-white rounded-xl shadow-2xl border border-gray-200 max-w-md w-full mx-4 max-h-[80vh] overflow-hidden animate-in fade-in zoom-in duration-200">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-            <button
-              onClick={closeOverlay}
-              className="p-1 rounded-lg hover:bg-gray-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            </button>
-          </div>
+  // Componente para el overlay del contenido del filtro (memoizado para evitar parpadeo)
+  const FilterOverlay = useMemo(() => {
+    return ({ section, title, children }) => {
+      if (openSection !== section) return null;
+      
+      return (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black bg-opacity-30"
+            onClick={closeOverlay}
+            style={{ transition: 'opacity 150ms ease-out' }}
+          />
           
-          {/* Content */}
-          <div className="p-4 overflow-y-auto max-h-[60vh]">
-            {children}
+          {/* Modal Content */}
+          <div 
+            className="relative bg-white rounded-xl shadow-2xl border border-gray-200 max-w-md w-full mx-4 max-h-[70vh] overflow-hidden"
+            style={{ 
+              animation: 'modalFadeIn 150ms ease-out',
+              transition: 'none'
+            }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
+              <button
+                onClick={closeOverlay}
+                className="p-1 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ transition: 'background-color 150ms ease-out' }}
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-4 overflow-y-auto max-h-[50vh]">
+              {children}
+            </div>
           </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
+  }, [openSection, closeOverlay]);
   // Validar que las opciones y filtros existan antes de pasarlos
   const operadores = filterOptions?.operadores || [];
   const estatus = filterOptions?.estatus || [];
@@ -357,7 +382,8 @@ const FilterPanel = ({
       
       <FilterOverlay section="filtrosRapidos" title="Filtros Rápidos">
         <QuickDateFilter 
-          onApplyFilter={onQuickDateFilter}
+          onApplyFilter={handleQuickDateFilterWithAnimation}
+          showingCheckmark={showingCheckmark}
         />
       </FilterOverlay>
       

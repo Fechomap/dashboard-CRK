@@ -9,6 +9,45 @@ const QuickDateFilter = ({ onApplyFilter }) => {
     return `${year}-${month}-${day}`;
   };
   
+  // Filtro para hoy
+  const handleToday = () => {
+    const today = new Date();
+    const todayFormatted = formatDate(today);
+    
+    console.log('Filtro Hoy:', {
+      fecha: today.toISOString(),
+      fechaFormatted: todayFormatted
+    });
+    
+    onApplyFilter(todayFormatted, todayFormatted);
+  };
+  
+  // Filtro para esta semana (lunes a domingo)
+  const handleThisWeek = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = domingo, 1 = lunes, etc.
+    
+    // Calcular el lunes de esta semana
+    const monday = new Date(today);
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Si es domingo, son 6 días desde el lunes
+    monday.setDate(today.getDate() - daysSinceMonday);
+    monday.setHours(0, 0, 0, 0);
+    
+    // Calcular el domingo de esta semana
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    
+    console.log('Filtro Esta Semana:', {
+      inicioISO: monday.toISOString(),
+      finISO: sunday.toISOString(),
+      inicioFormatted: formatDate(monday),
+      finFormatted: formatDate(sunday)
+    });
+    
+    onApplyFilter(formatDate(monday), formatDate(sunday));
+  };
+  
   // Filtro para el mes actual
   const handleThisMonth = () => {
     const today = new Date();
@@ -95,25 +134,51 @@ const QuickDateFilter = ({ onApplyFilter }) => {
   
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">Filtros rápidos</label>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <button
+          onClick={handleToday}
+          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
+          </svg>
+          Hoy
+        </button>
+        <button
+          onClick={handleThisWeek}
+          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          Esta semana
+        </button>
         <button
           onClick={handleThisMonth}
-          className="px-3 py-2 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200"
+          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
         >
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
           Este mes
         </button>
         <button
           onClick={handleLast30Days}
-          className="px-3 py-2 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200"
+          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
         >
-          Últimos 30 días
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          30 días
         </button>
         <button
           onClick={handleLast3Months}
-          className="px-3 py-2 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200"
+          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
         >
-          Últimos 3 meses
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          3 meses
         </button>
       </div>
     </div>

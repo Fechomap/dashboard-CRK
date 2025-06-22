@@ -25,6 +25,185 @@ const FilterPanel = ({
     setOpenSection(null);
   };
   
+  // Función para formatear fecha
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('es-ES', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: '2-digit' 
+    });
+  };
+  
+  // Función auxiliar para formatear fecha a YYYY-MM-DD (igual que en QuickDateFilter)
+  const formatDateForComparison = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
+  // Función para detectar qué filtro rápido está aplicado
+  const detectQuickFilter = () => {
+    if (!filters.fechaInicio || !filters.fechaFin) return null;
+    
+    const today = new Date();
+    const todayFormatted = formatDateForComparison(today);
+    
+    // Verificar si es "Hoy"
+    if (filters.fechaInicio === todayFormatted && filters.fechaFin === todayFormatted) {
+      return "Hoy";
+    }
+    
+    // Verificar si es "Esta semana"
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    monday.setDate(today.getDate() - daysSinceMonday);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    if (filters.fechaInicio === formatDateForComparison(monday) && 
+        filters.fechaFin === formatDateForComparison(sunday)) {
+      return "Esta semana";
+    }
+    
+    // Verificar si es "Este mes"
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    
+    if (filters.fechaInicio === formatDateForComparison(startOfMonth) && 
+        filters.fechaFin === formatDateForComparison(endOfMonth)) {
+      return "Este mes";
+    }
+    
+    // Verificar si es "Últimos 30 días"
+    const endDate30 = new Date();
+    const startDate30 = new Date();
+    startDate30.setDate(endDate30.getDate() - 30);
+    
+    if (filters.fechaInicio === formatDateForComparison(startDate30) && 
+        filters.fechaFin === formatDateForComparison(endDate30)) {
+      return "30 días";
+    }
+    
+    // Verificar si es "Últimos 3 meses"
+    const endDate3m = new Date();
+    const startDate3m = new Date();
+    startDate3m.setMonth(endDate3m.getMonth() - 3);
+    
+    if (filters.fechaInicio === formatDateForComparison(startDate3m) && 
+        filters.fechaFin === formatDateForComparison(endDate3m)) {
+      return "3 meses";
+    }
+    
+    return null; // No coincide con ningún filtro rápido
+  };
+  
+  // Componente para mostrar filtros activos
+  const ActiveFiltersIndicator = () => {
+    const hasDateFilter = filters.fechaInicio || filters.fechaFin;
+    const hasStatusFilter = filters.estatus && filters.estatus.length > 0;
+    const hasOperatorFilter = filters.operador && filters.operador.length > 0;
+    const quickFilterDetected = detectQuickFilter();
+    
+    // Si no hay filtros activos, no mostrar nada
+    if (!hasDateFilter && !hasStatusFilter && !hasOperatorFilter) {
+      return null;
+    }
+    
+    return (
+      <div className="bg-gray-50 rounded-lg p-4 h-fit">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+          <svg className="w-4 h-4 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Filtros Activos
+        </h3>
+        
+        <div className="space-y-3">
+          {/* Indicador de Filtro Rápido */}
+          {quickFilterDetected && (
+            <div className="flex items-center text-xs">
+              <div className="bg-blue-100 p-1 rounded mr-2">
+                <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="text-gray-500">Filtro rápido:</div>
+                <div className="text-blue-700 font-semibold">{quickFilterDetected}</div>
+              </div>
+            </div>
+          )}
+          
+          {/* Indicador de Filtro de Fechas Manual (solo si no es filtro rápido) */}
+          {hasDateFilter && !quickFilterDetected && (
+            <div className="flex items-center text-xs">
+              <div className="bg-gray-100 p-1 rounded mr-2">
+                <svg className="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="text-gray-500">Fechas:</div>
+                <div className="text-gray-700 font-medium">
+                  {filters.fechaInicio && filters.fechaFin ? 
+                    `${formatDate(filters.fechaInicio)} - ${formatDate(filters.fechaFin)}` :
+                    filters.fechaInicio ? 
+                      `Desde: ${formatDate(filters.fechaInicio)}` :
+                      `Hasta: ${formatDate(filters.fechaFin)}`
+                  }
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Indicador de Estados */}
+          {hasStatusFilter && (
+            <div className="flex items-start text-xs">
+              <div className="bg-green-100 p-1 rounded mr-2 mt-0.5">
+                <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="text-gray-500">Estados:</div>
+                <div className="text-green-700 font-medium">
+                  {filters.estatus.length <= 3 ? 
+                    filters.estatus.join(', ') :
+                    `${filters.estatus.length} estados seleccionados`
+                  }
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Indicador de Operadores */}
+          {hasOperatorFilter && (
+            <div className="flex items-start text-xs">
+              <div className="bg-purple-100 p-1 rounded mr-2 mt-0.5">
+                <svg className="w-3 h-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+              </div>
+              <div className="flex-1">
+                <div className="text-gray-500">Operadores:</div>
+                <div className="text-purple-700 font-medium">
+                  {filters.operador.length <= 3 ? 
+                    filters.operador.join(', ') :
+                    `${filters.operador.length} operadores seleccionados`
+                  }
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
   // Componente para el header de sección clickeable
   const FilterHeader = ({ section, title, icon, count = 0 }) => {
     const isOpen = openSection === section;
@@ -118,54 +297,63 @@ const FilterPanel = ({
           <h2 className="text-lg font-semibold text-gray-800">Filtros de Datos</h2>
         </div>
         
-        <div className="space-y-4 w-full">
-          {/* Date Filter Header */}
-          <FilterHeader 
-            section="fechas" 
-            title="Rango de Fechas" 
-            count={filters.fechaInicio || filters.fechaFin ? 1 : 0}
-            icon={
-              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-            }
-          />
+        {/* Layout en dos columnas: filtros a la izquierda, indicadores a la derecha */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Columna izquierda - Filtros (2/3 del espacio) */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* Date Filter Header */}
+            <FilterHeader 
+              section="fechas" 
+              title="Rango de Fechas" 
+              count={filters.fechaInicio || filters.fechaFin ? 1 : 0}
+              icon={
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              }
+            />
+            
+            {/* Quick Date Filters Header */}
+            <FilterHeader 
+              section="filtrosRapidos" 
+              title="Filtros Rápidos" 
+              count={0}
+              icon={
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              }
+            />
+            
+            {/* Status Filter Header */}
+            <FilterHeader 
+              section="estados" 
+              title="Estados" 
+              count={filters.estatus?.length || 0}
+              icon={
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              }
+            />
+            
+            {/* Operators Filter Header */}
+            <FilterHeader 
+              section="operadores" 
+              title="Operadores" 
+              count={filters.operador?.length || 0}
+              icon={
+                <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                </svg>
+              }
+            />
+          </div>
           
-          {/* Quick Date Filters Header */}
-          <FilterHeader 
-            section="filtrosRapidos" 
-            title="Filtros Rápidos" 
-            count={0}
-            icon={
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            }
-          />
-          
-          {/* Status Filter Header */}
-          <FilterHeader 
-            section="estados" 
-            title="Estados" 
-            count={filters.estatus?.length || 0}
-            icon={
-              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-            }
-          />
-          
-          {/* Operators Filter Header */}
-          <FilterHeader 
-            section="operadores" 
-            title="Operadores" 
-            count={filters.operador?.length || 0}
-            icon={
-              <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-              </svg>
-            }
-          />
+          {/* Columna derecha - Indicadores de filtros activos (1/3 del espacio) */}
+          <div className="lg:col-span-1">
+            <ActiveFiltersIndicator />
+          </div>
         </div>
       </div>
 

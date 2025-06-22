@@ -1,6 +1,6 @@
 import React from 'react';
 
-const QuickDateFilter = ({ onApplyFilter }) => {
+const QuickDateFilter = ({ onApplyFilter, showingCheckmark }) => {
   // Función auxiliar para formatear fecha a YYYY-MM-DD
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -19,7 +19,7 @@ const QuickDateFilter = ({ onApplyFilter }) => {
       fechaFormatted: todayFormatted
     });
     
-    onApplyFilter(todayFormatted, todayFormatted);
+    onApplyFilter(todayFormatted, todayFormatted, 'hoy');
   };
   
   // Filtro para esta semana (lunes a domingo)
@@ -45,7 +45,7 @@ const QuickDateFilter = ({ onApplyFilter }) => {
       finFormatted: formatDate(sunday)
     });
     
-    onApplyFilter(formatDate(monday), formatDate(sunday));
+    onApplyFilter(formatDate(monday), formatDate(sunday), 'estaSemana');
   };
   
   // Filtro para el mes actual
@@ -69,7 +69,8 @@ const QuickDateFilter = ({ onApplyFilter }) => {
     
     onApplyFilter(
       formatDate(startOfMonth),
-      formatDate(endOfMonth)
+      formatDate(endOfMonth),
+      'esteMes'
     );
   };
   
@@ -97,7 +98,7 @@ const QuickDateFilter = ({ onApplyFilter }) => {
     });
     
     // Aplicar el filtro
-    onApplyFilter(startFormatted, endFormatted);
+    onApplyFilter(startFormatted, endFormatted, '30Dias');
     
     // Mostrar información adicional para depuración
     setTimeout(() => {
@@ -128,7 +129,8 @@ const QuickDateFilter = ({ onApplyFilter }) => {
     
     onApplyFilter(
       formatDate(startDate),
-      formatDate(endDate)
+      formatDate(endDate),
+      '3Meses'
     );
   };
   
@@ -137,48 +139,98 @@ const QuickDateFilter = ({ onApplyFilter }) => {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <button
           onClick={handleToday}
-          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
+          className={`px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10 ${
+            showingCheckmark === 'hoy' ? 'button-success-animation' : ''
+          }`}
         >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
-          </svg>
-          Hoy
+          {showingCheckmark === 'hoy' ? (
+            <svg className="w-4 h-4 text-green-600 checkmark-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          ) : (
+            <>
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707"></path>
+              </svg>
+              Hoy
+            </>
+          )}
         </button>
         <button
           onClick={handleThisWeek}
-          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
+          className={`px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10 ${
+            showingCheckmark === 'estaSemana' ? 'button-success-animation' : ''
+          }`}
         >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-          Esta semana
+          {showingCheckmark === 'estaSemana' ? (
+            <svg className="w-4 h-4 text-green-600 checkmark-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          ) : (
+            <>
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              Esta semana
+            </>
+          )}
         </button>
         <button
           onClick={handleThisMonth}
-          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
+          className={`px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10 ${
+            showingCheckmark === 'esteMes' ? 'button-success-animation' : ''
+          }`}
         >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-          </svg>
-          Este mes
+          {showingCheckmark === 'esteMes' ? (
+            <svg className="w-4 h-4 text-green-600 checkmark-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          ) : (
+            <>
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              </svg>
+              Este mes
+            </>
+          )}
         </button>
         <button
           onClick={handleLast30Days}
-          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
+          className={`px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10 ${
+            showingCheckmark === '30Dias' ? 'button-success-animation' : ''
+          }`}
         >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          30 días
+          {showingCheckmark === '30Dias' ? (
+            <svg className="w-4 h-4 text-green-600 checkmark-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          ) : (
+            <>
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              30 días
+            </>
+          )}
         </button>
         <button
           onClick={handleLast3Months}
-          className="px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10"
+          className={`px-4 py-2.5 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center h-10 ${
+            showingCheckmark === '3Meses' ? 'button-success-animation' : ''
+          }`}
         >
-          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          3 meses
+          {showingCheckmark === '3Meses' ? (
+            <svg className="w-4 h-4 text-green-600 checkmark-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          ) : (
+            <>
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              3 meses
+            </>
+          )}
         </button>
       </div>
     </div>

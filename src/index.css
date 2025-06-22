@@ -48,6 +48,53 @@ html, body, #root {
   }
 }
 
+/* Animación optimizada para modales sin parpadeo */
+@keyframes modalFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.98) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Animaciones para confirmación de filtros rápidos */
+@keyframes checkmarkAppear {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes buttonSuccess {
+  0% {
+    background-color: #dbeafe; /* azul original */
+    border-color: #93c5fd;
+  }
+  100% {
+    background-color: #dcfce7; /* verde éxito */
+    border-color: #86efac;
+  }
+}
+
+.checkmark-animation {
+  animation: checkmarkAppear 0.3s ease-out;
+}
+
+.button-success-animation {
+  animation: buttonSuccess 0.3s ease-out forwards;
+}
+
 .animate-in {
   animation-fill-mode: both;
 }
